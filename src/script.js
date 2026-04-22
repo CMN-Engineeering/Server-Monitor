@@ -7,21 +7,18 @@ let currentUser = null; // { role: 'admin' | 'operator' }
 let selectedFactoryIndex = null;
 let selectedStorageIndex = null;
 let selectedMachineIndex = null;
-let selectedConveyorIndex = null;
 
 const factorySelect = document.getElementById('factory-select');
 const storageSelect = document.getElementById('storage-select');
 const machineSelect = document.getElementById('machine-select');
-const conveyorSelect = document.getElementById('conveyor-select');
 const detailsPanel = document.getElementById('details-panel');
 const detailsTitle = document.getElementById('details-title');
 const detailsContent = document.getElementById('details-content');
+
 // ==========================================
 // 2. XỬ LÝ AUTHENTICATION (LOGIN/LOGOUT LƯU PHIÊN)
 // ==========================================
 function login() {
-    // Reload the app data mỗi lần đăng nhập để đảm bảo dữ liệu mới nhất (nếu có thay đổi từ server)
-    
     const u = document.getElementById('username').value;
     const p = document.getElementById('password').value;
     
@@ -35,28 +32,23 @@ function login() {
     }
 
     loadSystemData();
-    // Lưu thông tin đăng nhập vào localStorage để giữ phiên khi F5 (Refresh)
     localStorage.setItem('monitorSession', JSON.stringify(currentUser));
     window.location.reload();
-    startApp();
 }
 
 function startApp() {
-    // Ẩn form login, hiện app
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-content').style.display = 'block';
     document.getElementById('user-display').innerText = `👤 ${currentUser.name} (${currentUser.role})`;
     
-    // Áp dụng class theo Role để ẩn/hiện nút
     document.body.className = `role-${currentUser.role}`;
     loadSystemData();
 }
 
 function logout() {
-    // Xác nhận trước khi đăng xuất
     if (confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
         currentUser = null;
-        localStorage.removeItem('monitorSession'); // Xóa phiên đăng nhập
+        localStorage.removeItem('monitorSession'); 
         
         document.getElementById('login-screen').style.display = 'flex';
         document.getElementById('app-content').style.display = 'none';
@@ -90,6 +82,7 @@ async function loadSystemData() {
 }
 
 function saveSystemData() {
+    // Lưu ngầm không reload trang
     fetch('http://localhost:3000/api/save-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -127,7 +120,6 @@ function deleteFactory() {
 function loadStorages() {
     storageSelect.innerHTML = '<option value="">-- Chọn kho --</option>';
     machineSelect.innerHTML = '<option value="">-- Chọn máy --</option>';
-    conveyorSelect.innerHTML = '<option value="">-- Chọn  --</option>';
     
     selectedFactoryIndex = factorySelect.value;
     if (selectedFactoryIndex === "") {
@@ -163,11 +155,11 @@ function deleteStorage() {
 }
 
 // ==========================================
-// 5. QUẢN LÝ MÁY &  (ADMIN THÊM/XÓA)
+// 5. QUẢN LÝ MÁY & BĂNG TẢI
 // ==========================================
 function loadMachines() {
     machineSelect.innerHTML = '<option value="">-- Chọn máy --</option>';
-    conveyorSelect.innerHTML = '<option value="">-- Chọn  --</option>';
+    selectedMachineIndex = ""; // Reset trạng thái chọn máy
     
     selectedStorageIndex = storageSelect.value;
     if (selectedStorageIndex === "") return;
@@ -179,7 +171,11 @@ function loadMachines() {
         });
     }
 
-    // Tự động render Dashboard Kho khi chọn kho
+    viewStorageDashboard();
+}
+
+function handleMachineSelection() {
+    selectedMachineIndex = machineSelect.value;
     viewStorageDashboard();
 }
 
@@ -209,8 +205,8 @@ function addMachine() {
                             "status": "stopped",
                             "speed": 0
                         }
-                    ]    
-            });
+                    ] 
+    });
     saveSystemData(); 
     loadMachines();
 }
@@ -221,42 +217,8 @@ function deleteMachine() {
     saveSystemData(); loadMachines();
 }
 
-function loadConveyors() {
-    conveyorSelect.innerHTML = '<option value="">-- Chọn  --</option>';
-    selectedMachineIndex = machineSelect.value;
-    if (selectedMachineIndex === "") return;
-
-    const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[selectedMachineIndex];
-    if (machine.conveyors) {
-        machine.conveyors.forEach((conveyor, index) => {
-            conveyorSelect.add(new Option(conveyor.name, index));
-        });
-    }
-}
-
-function addConveyor() {
-    if (!selectedMachineIndex) return alert("Chọn máy trước!");
-    const conveyorName = prompt("Nhập tên :");
-    if (!conveyorName) return;
-    
-    systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[selectedMachineIndex].conveyors.push({
-        id: `conv_${Date.now()}`,
-        name: conveyorName.trim(),
-        status: "stopped",
-        speed: 0,
-        direction: "Forward"
-    });
-    saveSystemData(); loadConveyors(); viewStorageDashboard();
-}
-
-function deleteConveyor() {
-    if (!conveyorSelect.value) return alert("Chọn  để xóa!");
-    systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[selectedMachineIndex].conveyors.splice(conveyorSelect.value, 1);
-    saveSystemData(); loadConveyors(); viewStorageDashboard();
-}
-
 // ==========================================
-// 6. DASHBOARD KHO TỔNG HỢP & TƯƠNG TÁC ROLE
+// 6. DASHBOARD KHO & MÁY
 // ==========================================
 function viewStorageDashboard() {
     if (selectedStorageIndex === null || selectedStorageIndex === "") return;
@@ -264,20 +226,41 @@ function viewStorageDashboard() {
     const factory = systemData.factories[selectedFactoryIndex];
     const storage = factory.storageUnits[selectedStorageIndex];
     
-    detailsTitle.innerText = `Dashboard Kho: ${storage.name}`;
+    let machinesToRender = [];
+    
+    // Nếu có chọn một máy cụ thể -> Đi thẳng tới dashboard máy đó
+    if (selectedMachineIndex !== null && selectedMachineIndex !== "") {
+        machinesToRender.push({ 
+            machine: storage.machineUnits[selectedMachineIndex], 
+            originalIdx: parseInt(selectedMachineIndex) 
+        });
+        detailsTitle.innerText = `Dashboard Máy: ${storage.machineUnits[selectedMachineIndex].name}`;
+    } else {
+        // Không chọn máy cụ thể -> Hiển thị toàn bộ kho
+        if (storage.machineUnits) {
+            machinesToRender = storage.machineUnits.map((m, i) => ({ machine: m, originalIdx: i }));
+        }
+        detailsTitle.innerText = `Dashboard Kho: ${storage.name}`;
+    }
     
     let html = `<div class="machine-grid">`;
     
-    if (storage.machineUnits && storage.machineUnits.length > 0) {
-        storage.machineUnits.forEach((machine, mIdx) => {
+    if (machinesToRender.length > 0) {
+        machinesToRender.forEach((item) => {
+            const machine = item.machine;
+            const mIdx = item.originalIdx;
+            
             html += `
             <div class="machine-block">
                 <div class="machine-header">
                     <div>
-                        <h3>🤖 ${machine.name} (ID: ${machine.id})</h3>
+                        <h3>${machine.name} (ID: ${machine.id})</h3>
                         <small>IP: ${machine.ip || 'Chưa thiết lập'}</small>
                     </div>
-                    ${currentUser.role === 'admin' ? `<button class="mgmt-btn" onclick="editMachineInfo(${mIdx})">⚙️ Sửa IP/ID</button>` : ''}
+                    <div style="display: flex; gap: 10px;">
+                        ${currentUser.role === 'admin' ? `<button class="mgmt-btn" onclick="addConveyorToMachine(${mIdx})">+ Thêm Băng tải</button>` : ''}
+                        ${currentUser.role === 'admin' ? `<button class="mgmt-btn" onclick="editMachineInfo(${mIdx})">⚙️ Sửa IP/ID</button>` : ''}
+                    </div>
                 </div>
                 <div class="conveyor-mini-grid">
             `;
@@ -292,18 +275,19 @@ function viewStorageDashboard() {
                         <span>Tốc độ: ${conv.speed} RPM</span>
                         <span>Hướng: ${conv.direction || 'Forward'}</span>
                         <div class="conv-controls">
-                            <button class="btn-toggle" onclick="toggleConveyor(${mIdx}, ${cIdx})">🔌 Bật/Tắt</button>
-                            ${currentUser.role === 'admin' ? `<button class="btn-config" onclick="editConveyorConfig(${mIdx}, ${cIdx})">⚙️ Cấu hình</button>` : ''}
+                            <button class="btn-toggle" onclick="toggleConveyor(${mIdx}, ${cIdx})">Bật/Tắt</button>
+                            ${currentUser.role === 'admin' ? `<button class="btn-config" onclick="editConveyorConfig(${mIdx}, ${cIdx})">Sửa</button>` : ''}
+                            
                         </div>
                     </div>`;
                 });
             } else {
-                html += `<p style="color:#888; font-style:italic;">Máy này chưa có .</p>`;
+                html += `<p style="color:#888; font-style:italic;">Máy này chưa có băng tải.</p>`;
             }
             html += `</div></div>`;
         });
     } else {
-        html += '<p>Chưa có máy nào trong kho này.</p>';
+        html += '<p>Chưa có máy nào để hiển thị.</p>';
     }
     
     html += `</div>`;
@@ -311,17 +295,33 @@ function viewStorageDashboard() {
 }
 
 // ==========================================
-// 7. CÁC HÀM TƯƠNG TÁC THEO ROLE
+// 7. CÁC HÀM TƯƠNG TÁC (NO REFRESH)
 // ==========================================
 // Operator & Admin có thể Bật/Tắt
-function toggleConveyor(machineIdx, convIdx) {
+window.toggleConveyor = function(machineIdx, convIdx) {
     const conveyor = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].conveyors[convIdx];
+    // Thay đổi trạng thái
     conveyor.status = conveyor.status === 'running' ? 'stopped' : 'running';
     saveSystemData();
-    viewStorageDashboard(); // Render lại dashboard
 }
 
-// Admin sửa Cấu hình Máy
+// Admin: Quản lý băng tải (Trực tiếp từ Dashboard Máy)
+window.addConveyorToMachine = function(machineIdx) {
+    const conveyorName = prompt("Nhập tên băng tải:");
+    if (!conveyorName) return;
+    
+    systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].conveyors.push({
+        id: `conv_${Date.now()}`,
+        name: conveyorName.trim(),
+        status: "stopped",
+        speed: 0,
+        direction: "Forward"
+    });
+    saveSystemData();
+    viewStorageDashboard();
+}
+
+// Admin: Sửa IP
 window.editMachineInfo = function(machineIdx) {
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
     
@@ -332,7 +332,7 @@ window.editMachineInfo = function(machineIdx) {
     viewStorageDashboard();
 }
 
-// Admin sửa Cấu hình 
+// Admin: Sửa cấu hình
 window.editConveyorConfig = function(machineIdx, convIdx) {
     const conveyor = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].conveyors[convIdx];
     
@@ -347,27 +347,22 @@ window.editConveyorConfig = function(machineIdx, convIdx) {
 }
 
 function clearAllSelections() {
-    selectedFactoryIndex = selectedStorageIndex = selectedMachineIndex = selectedConveyorIndex = null;
+    selectedFactoryIndex = selectedStorageIndex = selectedMachineIndex = null;
     factorySelect.innerHTML = '<option value="">-- Chọn nhà máy --</option>';
     storageSelect.innerHTML = '<option value="">-- Chọn kho --</option>';
     machineSelect.innerHTML = '<option value="">-- Chọn máy --</option>';
-    conveyorSelect.innerHTML = '<option value="">-- Chọn  --</option>';
     detailsPanel.innerHTML = '<h2>Chọn Nhà máy và Kho để xem Dashboard</h2>';
 }
 
 // ==========================================
-// 8. KHỞI ĐỘNG TRANG (TỰ ĐỘNG ĐĂNG NHẬP NẾU CÓ SESSION)
+// 8. KHỞI ĐỘNG TRANG 
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Kiểm tra xem có phiên đăng nhập cũ không
     const savedSession = localStorage.getItem('monitorSession');
-    
     if (savedSession) {
-        // Nếu có, tự động đăng nhập
         currentUser = JSON.parse(savedSession);
         startApp();
     } else {
-        // Nếu không, để hiển thị màn hình đăng nhập mặc định
         document.getElementById('login-screen').style.display = 'flex';
         document.getElementById('app-content').style.display = 'none';
     }

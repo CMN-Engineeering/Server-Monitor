@@ -28,42 +28,34 @@
         </div>
         
         <div class="management-bar">
-            <div class="selector-group">
-                <label>Nhà máy:</label>
-                <select id="factory-select" onchange="loadStorages()">
-                    <option value="">-- Chọn nhà máy --</option>
-                </select>
-                <button class="mgmt-btn admin-only" onclick="addFactory()">+ Thêm</button>
-                <button class="mgmt-btn delete admin-only" onclick="deleteFactory()">- Xóa</button>
-            </div>
-            
-            <div class="selector-group">
-                <label>Kho:</label>
-                <select id="storage-select" onchange="loadMachines()">
-                    <option value="">-- Chọn kho --</option>
-                </select>
-                <button class="mgmt-btn admin-only" onclick="addStorage()">+ Thêm</button>
-                <button class="mgmt-btn delete admin-only" onclick="deleteStorage()">- Xóa</button>
-            </div>
+    <div class="selector-group">
+        <label>Nhà máy:</label>
+        <select id="factory-select" onchange="loadStorages()">
+            <option value="">-- Chọn nhà máy --</option>
+        </select>
+        <button class="mgmt-btn admin-only" onclick="addFactory()">+ Thêm</button>
+        <button class="mgmt-btn delete admin-only" onclick="deleteFactory()">- Xóa</button>
+    </div>
+    
+    <div class="selector-group">
+        <label>Kho:</label>
+        <select id="storage-select" onchange="loadMachines()">
+            <option value="">-- Chọn kho --</option>
+        </select>
+        <button class="mgmt-btn admin-only" onclick="addStorage()">+ Thêm</button>
+        <button class="mgmt-btn delete admin-only" onclick="deleteStorage()">- Xóa</button>
+    </div>
 
-            <div class="selector-group admin-only">
-                <label>Máy:</label>
-                <select id="machine-select" onchange="loadConveyors()">
-                    <option value="">-- Chọn máy --</option>
-                </select>
-                <button class="mgmt-btn" onclick="addMachine()">+ Thêm</button>
-                <button class="mgmt-btn delete" onclick="deleteMachine()">- Xóa</button>
-            </div>
-
-            <div class="selector-group admin-only" display: none;">
-                <label>Băng tải:</label>
-                <select id="conveyor-select" onchange="loadConveyorDetails()">
-                    <option value="">-- Chọn băng tải --</option>
-                </select>
-                <button class="mgmt-btn" onclick="addConveyor()">+ Thêm</button>
-                <button class="mgmt-btn delete" onclick="deleteConveyor()">- Xóa</button>
-            </div>
-        </div>
+    <div class="selector-group">
+        <label>Máy:</label>
+        <select id="machine-select" onchange="handleMachineSelection()">
+            <option value="">-- Chọn máy --</option>
+        </select>
+        <button class="mgmt-btn admin-only" onclick="addMachine()">+ Thêm</button>
+        <button class="mgmt-btn delete admin-only" onclick="deleteMachine()">- Xóa</button>
+    </div>
+    
+    </div>
 
         <div class="content">
             <div class="details-panel" id="details-panel">

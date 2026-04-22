@@ -4,18 +4,18 @@
             "id": "factory1",
             "storageUnits": [
                 {
-                    "id": "storage1",
-                    "name": "Storage Unit 1",
+                    "id": "su2",
+                    "name": "Storage Unit 2",
                     "machineUnits": [
                         {
-                            "id": "machine1",
-                            "name": "Machine Unit 1",
+                            "id": "machine3",
+                            "name": "Machine Unit 3",
                             "conveyors": [
                                 {
                                     "id": "conveyor1",
                                     "name": "Conveyor Belt 1",
-                                    "status": "running",
-                                    "speed": 5,
+                                    "status": "stopped",
+                                    "speed": 4,
                                     "direction": "Forward"
                                 },
                                 {
@@ -27,50 +27,16 @@
                             ]
                         },
                         {
-                            "id": "machine2",
-                            "name": "Machine Unit 2",
+                            "id": "scs",
+                            "name": "KKK",
+                            "ip": "192.168.1.100",
                             "conveyors": [
                                 {
                                     "id": "conveyor1",
                                     "name": "Conveyor Belt 1",
-                                    "status": "running",
-                                    "speed": 7
-                                },
-                                {
-                                    "id": "conveyor2",
-                                    "name": "Conveyor Belt 2",
-                                    "status": "running",
-                                    "speed": 6
-                                }
-                            ]
-                        },
-                        {
-                            "id": "machine_1776837346461",
-                            "name": "ccc",
-                            "conveyors": [
-                                {
-                                    "id": "conveyor_1776837353009",
-                                    "name": "w2",
                                     "status": "stopped",
-                                    "speed": 0
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "su2",
-                    "name": "Storage Unit 2",
-                    "machineUnits": [
-                        {
-                            "id": "machine3",
-                            "name": "Machine Unit 3",
-                            "conveyors": [
-                                {
-                                    "id": "conveyor1",
-                                    "name": "Conveyor Belt 1",
-                                    "status": "running",
-                                    "speed": 4
+                                    "speed": 52,
+                                    "direction": "d"
                                 },
                                 {
                                     "id": "conveyor2",
@@ -94,7 +60,7 @@
                                 {
                                     "id": "conv_1776840998036",
                                     "name": "2222",
-                                    "status": "stopped",
+                                    "status": "running",
                                     "speed": 0,
                                     "direction": "Forward"
                                 }
@@ -112,11 +78,6 @@
                     "name": "wdwc",
                     "machineUnits": [
                         {
-                            "id": "machine_1776835234767",
-                            "name": "1111",
-                            "conveyors": []
-                        },
-                        {
                             "id": "qsc",
                             "name": "ddd",
                             "ip": "192.168.1.100",
@@ -130,7 +91,7 @@
                                 {
                                     "id": "conveyor1",
                                     "name": "Conveyor Belt 1",
-                                    "status": "stopped",
+                                    "status": "running",
                                     "speed": 4
                                 },
                                 {
@@ -159,7 +120,7 @@
                                 {
                                     "id": "conveyor_1776837319627",
                                     "name": "111",
-                                    "status": "running",
+                                    "status": "stopped",
                                     "speed": 0
                                 }
                             ]

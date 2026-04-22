@@ -38,7 +38,7 @@ app.get('/api/load-data', (req, res) => {
 app.post('/api/save-data', (req, res) => {
     const newData = req.body;
     
-    // Ghi đè dữ liệu mới vào sys-data.json (format với 4 spaces cho đẹp)
+    // Ghi đè dữ liệu mới vào sys-data.json
     fs.writeFile(DATA_FILE, JSON.stringify(newData, null, 4), 'utf8', (err) => {
         if (err) {
             console.error("Lỗi khi ghi file:", err);
