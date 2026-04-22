@@ -6,35 +6,23 @@ const cors = require('cors');
 const app = express();
 const PORT = 3000;
 
-// Path to your JSON file
 const DATA_FILE = path.join(__dirname, 'sys-data.json');
 
-// Middleware
-app.use(cors()); // Cho phép frontend gọi API
-app.use(express.json()); // Cho phép server đọc JSON body
+app.use(cors()); 
+app.use(express.json()); 
 
-// ==========================================
-// API: LOAD DATA
-// ==========================================
+// THÊM DÒNG NÀY: Cho phép Node.js phục vụ các file frontend (index.html, styles.css, script.js)
+app.use(express.static(__dirname));
+
 app.get('/api/load-data', (req, res) => {
+    // ... (Giữ nguyên code cũ) ...
     fs.readFile(DATA_FILE, 'utf8', (err, data) => {
-        if (err) {
-            console.error("Lỗi khi đọc file:", err);
-            // Trả về cấu trúc trống nếu file không tồn tại
-            return res.json({ factories: [] }); 
-        }
-        try {
-            res.json(JSON.parse(data));
-        } catch (parseError) {
-            console.error("Lỗi parse JSON:", parseError);
-            res.status(500).json({ error: "Invalid JSON format in sys-data.json" });
-        }
+        if (err) return res.json({ factories: [] }); 
+        try { res.json(JSON.parse(data)); } 
+        catch (parseError) { res.status(500).json({ error: "Invalid JSON format" }); }
     });
 });
 
-// ==========================================
-// API: SAVE DATA
-// ==========================================
 app.post('/api/save-data', (req, res) => {
     const newData = req.body;
     
@@ -49,8 +37,7 @@ app.post('/api/save-data', (req, res) => {
     });
 });
 
-// Khởi động Server
 app.listen(PORT, () => {
     console.log(`✅ Backend server đang chạy tại: http://localhost:${PORT}`);
-    console.log(`📡 Mở trang HTML của bạn để bắt đầu tương tác.`);
+    console.log(`📡 Truy cập http://localhost:${PORT} trên trình duyệt để sử dụng App!`);
 });

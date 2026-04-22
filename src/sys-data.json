@@ -4,124 +4,90 @@
             "id": "factory1",
             "storageUnits": [
                 {
-                    "id": "su2",
-                    "name": "Storage Unit 2",
+                    "name": "Kho 1",
+                    "id": "storage1",
                     "machineUnits": [
                         {
-                            "id": "machine3",
-                            "name": "Machine Unit 3",
-                            "conveyors": [
+                            "id": "machine1",
+                            "name": "Máy 1",
+                            "type": "Bồn Chứa",
+                            "ip": "192.168.1.12",
+                            "components": [
                                 {
-                                    "id": "conveyor1",
-                                    "name": "Conveyor Belt 1",
-                                    "status": "stopped",
-                                    "speed": 4,
+                                    "id": "conveyor-belt-1",
+                                    "name": "Băng chuyền 1",
+                                    "status": "running",
+                                    "speed": 100,
                                     "direction": "Forward"
                                 },
                                 {
-                                    "id": "conveyor2",
-                                    "name": "Conveyor Belt 2",
-                                    "status": "stopped",
-                                    "speed": 0
+                                    "id": "conveyor-belt-2",
+                                    "name": "Băng chuyền 2",
+                                    "status": "running",
+                                    "speed": 0,
+                                    "direction": "Reverse"
+                                },
+                                {
+                                    "id": "ssds",
+                                    "name": "ddd",
+                                    "status": "running",
+                                    "speed": 0,
+                                    "direction": "Forward"
                                 }
                             ]
                         },
                         {
-                            "id": "scs",
-                            "name": "KKK",
-                            "ip": "192.168.1.100",
-                            "conveyors": [
+                            "id": "machine2",
+                            "name": "Máy 2",
+                            "type": "Bồn Chứa",
+                            "ip": "192.168.1.14",
+                            "components": [
                                 {
-                                    "id": "conveyor1",
-                                    "name": "Conveyor Belt 1",
-                                    "status": "stopped",
-                                    "speed": 52,
-                                    "direction": "d"
+                                    "id": "conveyor-belt-1",
+                                    "name": "Băng chuyền 1",
+                                    "status": "running",
+                                    "speed": 150,
+                                    "direction": "Forward"
                                 },
                                 {
-                                    "id": "conveyor2",
-                                    "name": "Conveyor Belt 2",
-                                    "status": "stopped",
-                                    "speed": 0
+                                    "id": "conveyor-belt-2",
+                                    "name": "Băng chuyền 2",
+                                    "status": "running",
+                                    "speed": 120,
+                                    "direction": "Reverse"
                                 }
                             ]
                         }
                     ]
                 },
                 {
-                    "id": "storage_1776840961976",
-                    "name": "tyu",
+                    "id": "storage_1776847464643",
+                    "name": "Kho 2",
                     "machineUnits": [
                         {
-                            "id": "cs",
-                            "name": "sss",
+                            "id": "sss",
+                            "name": "Ucs",
+                            "type": "ccsc",
                             "ip": "192.168.1.100",
-                            "conveyors": [
-                                {
-                                    "id": "conv_1776840998036",
-                                    "name": "2222",
-                                    "status": "running",
-                                    "speed": 0,
-                                    "direction": "Forward"
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": "cccc",
-            "storageUnits": [
-                {
-                    "id": "storage_1776835220707",
-                    "name": "wdwc",
-                    "machineUnits": [
-                        {
-                            "id": "qsc",
-                            "name": "ddd",
-                            "ip": "192.168.1.100",
-                            "conveyors": []
-                        },
-                        {
-                            "id": "ad",
-                            "name": "ddd",
-                            "ip": "dad",
-                            "conveyors": [
+                            "components": [
                                 {
                                     "id": "conveyor1",
                                     "name": "Conveyor Belt 1",
                                     "status": "running",
-                                    "speed": 4
+                                    "speed": 0
                                 },
                                 {
                                     "id": "conveyor2",
                                     "name": "Conveyor Belt 2",
-                                    "status": "stopped",
+                                    "status": "running",
                                     "speed": 0
-                                }
-                            ]
-                        }
-                    ]
-                }
-            ]
-        },
-        {
-            "id": "csc",
-            "storageUnits": [
-                {
-                    "id": "storage_1776837308310",
-                    "name": "ccc",
-                    "machineUnits": [
-                        {
-                            "id": "machine_1776837314309",
-                            "name": "12d",
-                            "conveyors": [
+                                },
                                 {
-                                    "id": "conveyor_1776837319627",
-                                    "name": "111",
+                                    "id": "conv_1776847518419",
+                                    "name": "cscsc",
                                     "status": "stopped",
-                                    "speed": 0
+                                    "speed": 0,
+                                    "direction": "Forward"
                                 }
                             ]
                         }

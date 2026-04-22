@@ -184,24 +184,32 @@ function addMachine() {
     
     const machineName = prompt("Nhập tên máy:");
     if (!machineName) return;
-
-    const machineId = prompt("Nhập ID cấu hình máy (vd: MAC-001):") || `mac_${Date.now()}`;
-    const machineIp = prompt("Nhập IP máy (vd: 192.168.1.100):") || "0.0.0.0";
+    
+    const machineType = prompt("Nhập loại máy (vd: Bồn Chứa):");
+    
+    const machineId = prompt("Nhập ID cấu hình máy (vd: MAC-001):");
+    if (!machineId) return alert("ID máy không được để trống!");
+    
+    const machineIp = prompt("Nhập IP máy (vd: 192.168.1.100):");
+    if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(machineIp)){
+        return alert("IP không hợp lệ!");
+    }
     
     systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits.push({
         id: machineId,
         name: machineName.trim(),
+        type: machineType ? machineType.trim() : "Unknown",
         ip: machineIp,
-        "conveyors": [
+        "components": [
                         {
-                            "id": "conveyor1",
-                            "name": "Conveyor Belt 1",
-                            "status": "running",
-                            "speed": 4
+                            "id": "component1",
+                            "name": "component Belt 1",
+                            "status": "stopped",
+                            "speed": 0
                         },
                         {
-                            "id": "conveyor2",
-                            "name": "Conveyor Belt 2",
+                            "id": "component2",
+                            "name": "component Belt 2",
                             "status": "stopped",
                             "speed": 0
                         }
@@ -255,18 +263,19 @@ function viewStorageDashboard() {
                 <div class="machine-header">
                     <div>
                         <h3>${machine.name} (ID: ${machine.id})</h3>
+                        <span>Loại: ${machine.type || 'N/A'}</span><br>
                         <small>IP: ${machine.ip || 'Chưa thiết lập'}</small>
                     </div>
                     <div style="display: flex; gap: 10px;">
-                        ${currentUser.role === 'admin' ? `<button class="mgmt-btn" onclick="addConveyorToMachine(${mIdx})">+ Thêm Băng tải</button>` : ''}
+                        ${currentUser.role === 'admin' ? `<button class="mgmt-btn" onclick="addComponentsToMachine(${mIdx})">Thêm Thiết bị</button>` : ''}
                         ${currentUser.role === 'admin' ? `<button class="mgmt-btn" onclick="editMachineInfo(${mIdx})">⚙️ Sửa IP/ID</button>` : ''}
                     </div>
                 </div>
-                <div class="conveyor-mini-grid">
+                <div class="component-mini-grid">
             `;
             
-            if (machine.conveyors && machine.conveyors.length > 0) {
-                machine.conveyors.forEach((conv, cIdx) => {
+            if (machine.components && machine.components.length > 0) {
+                machine.components.forEach((conv, cIdx) => {
                     const statusIcon = conv.status === 'running' ? '🟢 Đang chạy' : '🔴 Dừng';
                     html += `
                     <div class="conv-item ${conv.status}">
@@ -275,8 +284,8 @@ function viewStorageDashboard() {
                         <span>Tốc độ: ${conv.speed} RPM</span>
                         <span>Hướng: ${conv.direction || 'Forward'}</span>
                         <div class="conv-controls">
-                            <button class="btn-toggle" onclick="toggleConveyor(${mIdx}, ${cIdx})">Bật/Tắt</button>
-                            ${currentUser.role === 'admin' ? `<button class="btn-config" onclick="editConveyorConfig(${mIdx}, ${cIdx})">Sửa</button>` : ''}
+                            <button class="btn-toggle" onclick="togglecomponent(${mIdx}, ${cIdx})">Bật/Tắt</button>
+                            ${currentUser.role === 'admin' ? `<button class="btn-config" onclick="editcomponentConfig(${mIdx}, ${cIdx})">Sửa</button>` : ''}
                             
                         </div>
                     </div>`;
@@ -298,21 +307,25 @@ function viewStorageDashboard() {
 // 7. CÁC HÀM TƯƠNG TÁC (NO REFRESH)
 // ==========================================
 // Operator & Admin có thể Bật/Tắt
-window.toggleConveyor = function(machineIdx, convIdx) {
-    const conveyor = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].conveyors[convIdx];
+window.togglecomponent = function(machineIdx, convIdx) {
+    const component = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].components[convIdx];
     // Thay đổi trạng thái
-    conveyor.status = conveyor.status === 'running' ? 'stopped' : 'running';
+    component.status = component.status === 'running' ? 'stopped' : 'running';
     saveSystemData();
+    viewStorageDashboard();
 }
 
 // Admin: Quản lý băng tải (Trực tiếp từ Dashboard Máy)
-window.addConveyorToMachine = function(machineIdx) {
-    const conveyorName = prompt("Nhập tên băng tải:");
-    if (!conveyorName) return;
+window.addComponentsToMachine = function(machineIdx) {
+    const componentName = prompt("Nhập tên thiết bị:");
     
-    systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].conveyors.push({
-        id: `conv_${Date.now()}`,
-        name: conveyorName.trim(),
+    const componentID = prompt("Nhập ID thiết bị:");
+    
+    if (!componentName) return;
+    
+    systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].components.push({
+        id: componentID,
+        name: componentName.trim(),
         status: "stopped",
         speed: 0,
         direction: "Forward"
@@ -324,24 +337,27 @@ window.addConveyorToMachine = function(machineIdx) {
 // Admin: Sửa IP
 window.editMachineInfo = function(machineIdx) {
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
-    
     const newIp = prompt(`Sửa IP cho máy ${machine.name}:`, machine.ip || "");
-    if (newIp !== null) machine.ip = newIp;
-
+    if (newIp == null || !/^(\d{1,3}\.){3}\d{1,3}$/.test(newIp)) {
+        return alert("IP không hợp lệ!");
+    }
+    machine.ip = newIp;
     saveSystemData();
     viewStorageDashboard();
 }
 
 // Admin: Sửa cấu hình
-window.editConveyorConfig = function(machineIdx, convIdx) {
-    const conveyor = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].conveyors[convIdx];
+window.editcomponentConfig = function(machineIdx, convIdx) {
+    const component = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].components[convIdx];
     
-    const newSpeed = prompt(`Sửa Tốc độ (RPM) cho ${conveyor.name}:`, conveyor.speed);
-    if (newSpeed !== null) conveyor.speed = parseInt(newSpeed) || 0;
+    const newSpeed = prompt(`Sửa Tốc độ (RPM) cho ${component.name}:`, component.speed);
+    if (newSpeed !== null) component.speed = parseInt(newSpeed) || 0;
 
-    const newDirection = prompt(`Sửa Hướng (Forward/Reverse) cho ${conveyor.name}:`, conveyor.direction || "Forward");
-    if (newDirection !== null) conveyor.direction = newDirection;
-
+    const newDirection = prompt(`Sửa Hướng (Forward/Reverse) cho ${component.name}:`, component.direction || "Forward");
+    if (newDirection !== null && (newDirection == "Forward" || newDirection == "Reverse")) 
+        component.direction = newDirection;
+    else alert("Hướng không hợp lệ! Chỉ nhận Forward hoặc Reverse.");
+    
     saveSystemData();
     viewStorageDashboard();
 }
