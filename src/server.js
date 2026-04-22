@@ -37,7 +37,6 @@ app.post('/api/save-data', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
-    console.log(`✅ Backend server đang chạy tại: http://localhost:${PORT}`);
-    console.log(`📡 Truy cập http://localhost:${PORT} trên trình duyệt để sử dụng App!`);
+app.listen(PORT,'0.0.0.0' ,() => {
+    console.log(`✅ Backend server đang chạy tại: http://0.0.0.0:${PORT}`);
 });
