@@ -7,32 +7,46 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="header">
-        <h1>Server Monitor - Hệ thống Quản lý Máy</h1>
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <h2>Hệ thống Quản lý Máy</h2>
+            <p>Vui lòng đăng nhập</p>
+            <input type="text" id="username" placeholder="Tài khoản (admin hoặc operator)">
+            <input type="password" id="password" placeholder="Mật khẩu (admin hoặc operator)">
+            <button class="mgmt-btn" style="width: 100%; margin-top: 10px;" onclick="login()">Đăng nhập</button>
+            <div id="login-error" style="color: red; margin-top: 10px; display: none;">Sai tài khoản hoặc mật khẩu!</div>
+        </div>
+    </div>
+
+    <div id="app-content" style="display: none;">
+        <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h1 style="margin: 0;">Server Monitor - Hệ thống Quản lý Máy</h1>
+            <div class="user-info">
+                <span id="user-display" style="margin-right: 15px; font-weight: bold;"></span>
+                <button class="mgmt-btn delete" onclick="logout()">Đăng xuất</button>
+            </div>
+        </div>
         
         <div class="management-bar">
-            <!-- Factory Selection -->
             <div class="selector-group">
                 <label>Nhà máy:</label>
                 <select id="factory-select" onchange="loadStorages()">
                     <option value="">-- Chọn nhà máy --</option>
                 </select>
-                <button class="mgmt-btn" onclick="addFactory()">+ Thêm</button>
-                <button class="mgmt-btn delete" onclick="deleteFactory()">- Xóa</button>
+                <button class="mgmt-btn admin-only" onclick="addFactory()">+ Thêm</button>
+                <button class="mgmt-btn delete admin-only" onclick="deleteFactory()">- Xóa</button>
             </div>
             
-            <!-- Storage Selection -->
             <div class="selector-group">
                 <label>Kho:</label>
                 <select id="storage-select" onchange="loadMachines()">
                     <option value="">-- Chọn kho --</option>
                 </select>
-                <button class="mgmt-btn" onclick="addStorage()">+ Thêm</button>
-                <button class="mgmt-btn delete" onclick="deleteStorage()">- Xóa</button>
+                <button class="mgmt-btn admin-only" onclick="addStorage()">+ Thêm</button>
+                <button class="mgmt-btn delete admin-only" onclick="deleteStorage()">- Xóa</button>
             </div>
 
-            <!-- Machine Selection -->
-            <div class="selector-group">
+            <div class="selector-group admin-only">
                 <label>Máy:</label>
                 <select id="machine-select" onchange="loadConveyors()">
                     <option value="">-- Chọn máy --</option>
@@ -41,8 +55,7 @@
                 <button class="mgmt-btn delete" onclick="deleteMachine()">- Xóa</button>
             </div>
 
-            <!-- Conveyor Selection -->
-            <div class="selector-group">
+            <div class="selector-group admin-only" display: none;">
                 <label>Băng tải:</label>
                 <select id="conveyor-select" onchange="loadConveyorDetails()">
                     <option value="">-- Chọn băng tải --</option>
@@ -50,21 +63,13 @@
                 <button class="mgmt-btn" onclick="addConveyor()">+ Thêm</button>
                 <button class="mgmt-btn delete" onclick="deleteConveyor()">- Xóa</button>
             </div>
-
-            <!-- View Confirmation Buttons -->
-            <div class="selector-group" style="margin-left: auto;">
-                <button class="mgmt-btn view-btn" onclick="viewStorageDashboard()" title="Xem dashboard kho">📊 Kho</button>
-                <button class="mgmt-btn view-btn" onclick="viewMachineDashboard()" title="Xem dashboard máy">📊 Máy</button>
-                <button class="mgmt-btn view-btn" onclick="viewConveyorDashboard()" title="Xem dashboard băng tải">📊 Băng tải</button>
-            </div>
         </div>
-    </div>
 
-    <!-- Display Details -->
-    <div class="content">
-        <div class="details-panel" id="details-panel">
-            <h2 id="details-title">Chọn một bánh xe tải để xem chi tiết</h2>
-            <div id="details-content"></div>
+        <div class="content">
+            <div class="details-panel" id="details-panel">
+                <h2 id="details-title">Chọn Nhà máy và Kho để xem Dashboard</h2>
+                <div id="details-content"></div>
+            </div>
         </div>
     </div>
 

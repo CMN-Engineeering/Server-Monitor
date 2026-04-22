@@ -15,7 +15,8 @@
                                     "id": "conveyor1",
                                     "name": "Conveyor Belt 1",
                                     "status": "running",
-                                    "speed": 5
+                                    "speed": 5,
+                                    "direction": "Forward"
                                 },
                                 {
                                     "id": "conveyor2",
@@ -80,6 +81,26 @@
                             ]
                         }
                     ]
+                },
+                {
+                    "id": "storage_1776840961976",
+                    "name": "tyu",
+                    "machineUnits": [
+                        {
+                            "id": "cs",
+                            "name": "sss",
+                            "ip": "192.168.1.100",
+                            "conveyors": [
+                                {
+                                    "id": "conv_1776840998036",
+                                    "name": "2222",
+                                    "status": "stopped",
+                                    "speed": 0,
+                                    "direction": "Forward"
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         },
@@ -94,6 +115,31 @@
                             "id": "machine_1776835234767",
                             "name": "1111",
                             "conveyors": []
+                        },
+                        {
+                            "id": "qsc",
+                            "name": "ddd",
+                            "ip": "192.168.1.100",
+                            "conveyors": []
+                        },
+                        {
+                            "id": "ad",
+                            "name": "ddd",
+                            "ip": "dad",
+                            "conveyors": [
+                                {
+                                    "id": "conveyor1",
+                                    "name": "Conveyor Belt 1",
+                                    "status": "stopped",
+                                    "speed": 4
+                                },
+                                {
+                                    "id": "conveyor2",
+                                    "name": "Conveyor Belt 2",
+                                    "status": "stopped",
+                                    "speed": 0
+                                }
+                            ]
                         }
                     ]
                 }
@@ -113,7 +159,7 @@
                                 {
                                     "id": "conveyor_1776837319627",
                                     "name": "111",
-                                    "status": "stopped",
+                                    "status": "running",
                                     "speed": 0
                                 }
                             ]
