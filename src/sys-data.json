@@ -1,0 +1,126 @@
+{
+    "factories": [
+        {
+            "id": "factory1",
+            "storageUnits": [
+                {
+                    "id": "storage1",
+                    "name": "Storage Unit 1",
+                    "machineUnits": [
+                        {
+                            "id": "machine1",
+                            "name": "Machine Unit 1",
+                            "conveyors": [
+                                {
+                                    "id": "conveyor1",
+                                    "name": "Conveyor Belt 1",
+                                    "status": "running",
+                                    "speed": 5
+                                },
+                                {
+                                    "id": "conveyor2",
+                                    "name": "Conveyor Belt 2",
+                                    "status": "stopped",
+                                    "speed": 0
+                                }
+                            ]
+                        },
+                        {
+                            "id": "machine2",
+                            "name": "Machine Unit 2",
+                            "conveyors": [
+                                {
+                                    "id": "conveyor1",
+                                    "name": "Conveyor Belt 1",
+                                    "status": "running",
+                                    "speed": 7
+                                },
+                                {
+                                    "id": "conveyor2",
+                                    "name": "Conveyor Belt 2",
+                                    "status": "running",
+                                    "speed": 6
+                                }
+                            ]
+                        },
+                        {
+                            "id": "machine_1776837346461",
+                            "name": "ccc",
+                            "conveyors": [
+                                {
+                                    "id": "conveyor_1776837353009",
+                                    "name": "w2",
+                                    "status": "stopped",
+                                    "speed": 0
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "id": "su2",
+                    "name": "Storage Unit 2",
+                    "machineUnits": [
+                        {
+                            "id": "machine3",
+                            "name": "Machine Unit 3",
+                            "conveyors": [
+                                {
+                                    "id": "conveyor1",
+                                    "name": "Conveyor Belt 1",
+                                    "status": "running",
+                                    "speed": 4
+                                },
+                                {
+                                    "id": "conveyor2",
+                                    "name": "Conveyor Belt 2",
+                                    "status": "stopped",
+                                    "speed": 0
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "cccc",
+            "storageUnits": [
+                {
+                    "id": "storage_1776835220707",
+                    "name": "wdwc",
+                    "machineUnits": [
+                        {
+                            "id": "machine_1776835234767",
+                            "name": "1111",
+                            "conveyors": []
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "csc",
+            "storageUnits": [
+                {
+                    "id": "storage_1776837308310",
+                    "name": "ccc",
+                    "machineUnits": [
+                        {
+                            "id": "machine_1776837314309",
+                            "name": "12d",
+                            "conveyors": [
+                                {
+                                    "id": "conveyor_1776837319627",
+                                    "name": "111",
+                                    "status": "stopped",
+                                    "speed": 0
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
