@@ -1,42 +1,76 @@
 const express = require('express');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
+const mqtt = require('mqtt');
+const { Server } = require('socket.io');
 
 const app = express();
 const PORT = 3000;
 
-const DATA_FILE = path.join(__dirname, 'sys-data.json');
+// Read SSL Certificates
+const sslOptions = {
+    key: fs.readFileSync(path.join(__dirname, 'key.pem')),
+    cert: fs.readFileSync(path.join(__dirname, 'cert.pem'))
+};
 
-app.use(cors()); 
-app.use(express.json()); 
-
-// THÊM DÒNG NÀY: Cho phép Node.js phục vụ các file frontend (index.html, styles.css, script.js)
+app.use(cors());
 app.use(express.static(__dirname));
+app.use(express.json());
 
-app.get('/api/load-data', (req, res) => {
-    // ... (Giữ nguyên code cũ) ...
-    fs.readFile(DATA_FILE, 'utf8', (err, data) => {
-        if (err) return res.json({ factories: [] }); 
-        try { res.json(JSON.parse(data)); } 
-        catch (parseError) { res.status(500).json({ error: "Invalid JSON format" }); }
+// Create HTTPS Server and attach Socket.io
+const server = https.createServer(sslOptions, app);
+const io = new Server(server);
+
+// ==========================================
+// MQTT BROKER SETUP
+// ==========================================
+const MQTT_BROKER = 'mqtt://localhost:1883'; // Đổi thành IP broker của bạn nếu khác
+const MQTT_TOPIC = 'factory/system_data';    // Đổi thành topic bạn đang dùng
+
+const mqttClient = mqtt.connect(MQTT_BROKER);
+let latestSystemData = { factories: [] }; // Lưu tạm dữ liệu mới nhất
+
+mqttClient.on('connect', () => {
+    console.log(`📡 Đã kết nối với Mosquitto Broker tại ${MQTT_BROKER}`);
+    mqttClient.subscribe(MQTT_TOPIC, (err) => {
+        if (!err) console.log(`✅ Đang lắng nghe topic: ${MQTT_TOPIC}`);
     });
 });
 
+// Khi có dữ liệu mới từ máy móc đẩy lên broker
+mqttClient.on('message', (topic, message) => {
+    try {
+        latestSystemData = JSON.parse(message.toString());
+        // Bắn ngay dữ liệu mới tới toàn bộ trình duyệt đang mở
+        io.emit('update-data', latestSystemData); 
+    } catch (err) {
+        console.error("Lỗi parse JSON từ MQTT:", err.message);
+    }
+});
+
+// ==========================================
+// WEBSOCKET (SOCKET.IO) SETUP
+// ==========================================
+io.on('connection', (socket) => {
+    console.log('💻 Một người dùng Web vừa kết nối');
+    // Gửi ngay dữ liệu mới nhất cho họ khi vừa load trang
+    socket.emit('update-data', latestSystemData);
+});
+
+// Admin lưu cấu hình (Bắn ngược lại MQTT để broker cập nhật)
 app.post('/api/save-data', (req, res) => {
     const newData = req.body;
+    latestSystemData = newData; // Cập nhật local
     
-    // Ghi đè dữ liệu mới vào sys-data.json
-    fs.writeFile(DATA_FILE, JSON.stringify(newData, null, 4), 'utf8', (err) => {
-        if (err) {
-            console.error("Lỗi khi ghi file:", err);
-            return res.status(500).json({ success: false, message: 'Lưu dữ liệu thất bại' });
-        }
-        console.log("✅ Dữ liệu đã được lưu thành công vào sys-data.json");
-        res.json({ success: true, message: 'Đã lưu dữ liệu' });
-    });
+    // Publish dữ liệu mới lên Broker để đồng bộ các thiết bị khác
+    mqttClient.publish(MQTT_TOPIC, JSON.stringify(newData), { retain: true });
+    
+    res.json({ success: true, message: 'Đã lưu và đồng bộ qua MQTT' });
 });
 
-app.listen(PORT,'0.0.0.0' ,() => {
-    console.log(`✅ Backend server đang chạy tại: http://0.0.0.0:${PORT}`);
+// Start Server
+server.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Web Server (HTTPS) đang chạy tại: https://localhost:${PORT}`);
 });
