@@ -61,37 +61,28 @@ function logout() {
 }
 
 // ==========================================
-// 3. KẾT NỐI SOCKET.IO (REAL-TIME MQTT DATA)
+// 3. TẢI VÀ LƯU DỮ LIỆU
 // ==========================================
-const socket = io(); // Khởi tạo kết nối WebSocket với server
-
-function startApp() {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('app-content').style.display = 'block';
-    document.getElementById('user-display').innerText = `👤 ${currentUser.name} (${currentUser.role})`;
-    
-    document.body.className = `role-${currentUser.role}`;
-    
-    // Lắng nghe dữ liệu realtime từ server (được đẩy từ Mosquitto)
-    socket.on('update-data', (incomingData) => {
-        // Kiểm tra xem đây có phải lần load dữ liệu đầu tiên không
-        const isFirstLoad = !systemData; 
-        
-        systemData = incomingData;
-        
-        if (isFirstLoad) {
-            populateFactories(); // Chỉ tạo lại dropdown ở lần tải đầu tiên
-        } else {
-            // Nếu đang xem màn hình Dashboard thì render lại ngay lập tức
-            if (selectedStorageIndex !== null && selectedStorageIndex !== "") {
-                viewStorageDashboard();
-            }
+async function loadSystemData() {
+    try {
+        const response = await fetch('/api/load-data');
+        if (!response.ok) throw new Error('Failed to load data');
+        systemData = await response.json();
+        populateFactories();
+    } catch (error) {
+        console.error('Lỗi server, thử đọc file local:', error);
+        try {
+            const response = await fetch('sys-data.json');
+            systemData = await response.json();
+            populateFactories();
+        } catch (fileError) {
+            alert('Lỗi: Không thể tải dữ liệu. Bật server.js lên nhé!');
         }
-    });
+    }
 }
 
 function saveSystemData() {
-    // Admin thay đổi trạng thái sẽ gửi API, Backend sẽ publish ngược lại MQTT
+    // Lưu ngầm không reload trang
     fetch('/api/save-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
