@@ -16,23 +16,23 @@
                                 {
                                     "id": "conveyor-belt-1",
                                     "name": "Cv1",
-                                    "status": "stopped",
-                                    "speed": 0,
-                                    "direction": "Forward"
+                                    "status": 1,
+                                    "speed": 312,
+                                    "direction": 0
                                 },
                                 {
                                     "id": "conveyor-belt-2",
                                     "name": "Cv2",
-                                    "status": "running",
+                                    "status": 1,
                                     "speed": 180,
-                                    "direction": "Reverse"
+                                    "direction": 1
                                 },
                                 {
                                     "id": "ssds",
                                     "name": "ddd",
-                                    "status": "running",
+                                    "status": 1,
                                     "speed": 50,
-                                    "direction": "Forward"
+                                    "direction": 1
                                 }
                             ]
                         },
@@ -45,16 +45,16 @@
                                 {
                                     "id": "conveyor-belt-1",
                                     "name": "Băng chuyền 1",
-                                    "status": "running",
+                                    "status": "1",
                                     "speed": 150,
-                                    "direction": "Forward"
+                                    "direction": "0"
                                 },
                                 {
                                     "id": "conveyor-belt-2",
                                     "name": "Băng chuyền 2",
-                                    "status": "running",
+                                    "status": "1",
                                     "speed": 120,
-                                    "direction": "Reverse"
+                                    "direction": "1"
                                 }
                             ]
                         }
@@ -73,21 +73,21 @@
                                 {
                                     "id": "conveyor1",
                                     "name": "Conveyor Belt 1",
-                                    "status": "running",
+                                    "status": "1",
                                     "speed": 0
                                 },
                                 {
                                     "id": "conveyor2",
                                     "name": "Conveyor Belt 2",
-                                    "status": "running",
+                                    "status": "1",
                                     "speed": 0
                                 },
                                 {
                                     "id": "conv_1776847518419",
                                     "name": "cscsc",
-                                    "status": "stopped",
-                                    "speed": 0,
-                                    "direction": "Forward"
+                                    "status": 1,
+                                    "speed": 12,
+                                    "direction": 1
                                 }
                             ]
                         }

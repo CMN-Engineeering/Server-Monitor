@@ -12,10 +12,17 @@ const PORT = 3000;
 const DATA_FILE = path.join(__dirname, 'sys-data.json');
 
 // --- 1. MQTT BROKER CONFIGURATION ---
-const MQTT_BROKER_URL = 'mqtt://localhost:1883'; 
+// Use mqtts:// for TLS/SSL connections, matching your custom port 2248
+const MQTT_BROKER_URL = 'mqtts://localhost:2248'; 
+
 const mqttOptions = {
-    username: 'YOUR_USERNAME', 
-    password: 'YOUR_PASSWORD'  
+    username: 'amt', 
+    password: 'amt123456',
+    // Read the CA certificate file for the secure connection
+    ca: fs.readFileSync('/etc/mosquitto/certs/ca.crt'),
+    // If you are using a self-signed certificate and get authorization errors, 
+    // you might need to temporarily set this to false, but true is safer.
+    rejectUnauthorized: true 
 };
 
 let latestSysData = { factories: [] };
@@ -31,14 +38,14 @@ if (fs.existsSync(DATA_FILE)) {
 const mqttClient = mqtt.connect(MQTT_BROKER_URL, mqttOptions);
 
 mqttClient.on('connect', () => {
-    console.log(`✅ Connected to local Mosquitto broker at ${MQTT_BROKER_URL}`);
+    console.log(`✅ Connected to secure Mosquitto broker at ${MQTT_BROKER_URL}`);
     
-    // Subscribe to all machine topics using the + wildcard (factory_id/storage_id/machine_id)
-    mqttClient.subscribe('+/+/+', (err) => {
+    // Subscribe to all topics using the # wildcard (matching your -t "#" command)
+    mqttClient.subscribe('#', (err) => {
         if (!err) {
-            console.log('✅ Subscribed to all machine topics pattern: +/+/+');
+            console.log('✅ Subscribed to all topics pattern: #');
         } else {
-            console.error('❌ Failed to subscribe to machine topics:', err);
+            console.error('❌ Failed to subscribe to topics:', err);
         }
     });
 });

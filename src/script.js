@@ -276,13 +276,14 @@ function viewStorageDashboard() {
             
             if (machine.components && machine.components.length > 0) {
                 machine.components.forEach((conv, cIdx) => {
-                    const statusIcon = conv.status === 'running' ? '🟢 Đang chạy' : '🔴 Dừng';
+                    const statusIcon = conv.status === 1 ? '🟢 Đang chạy' : '🔴 Dừng';
+                    const directionText = conv.direction === 1 ? 'Thuận' : 'Nghịch';
                     html += `
                     <div class="conv-item ${conv.status}">
                         <strong>${conv.name}</strong>
                         <span>Trạng thái: ${statusIcon}</span>
                         <span>Tốc độ: ${conv.speed} RPM</span>
-                        <span>Hướng: ${conv.direction || 'Forward'}</span>
+                        <span>Hướng: ${directionText}</span>
                         <div class="conv-controls">
                             <button class="btn-toggle" onclick="togglecomponent(${mIdx}, ${cIdx})">Bật/Tắt</button>
                             ${currentUser.role === 'admin' ? `<button class="btn-config" onclick="editcomponentConfig(${mIdx}, ${cIdx})">Sửa</button>` : ''}
@@ -310,7 +311,7 @@ function viewStorageDashboard() {
 window.togglecomponent = function(machineIdx, convIdx) {
     const component = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].components[convIdx];
     // Thay đổi trạng thái
-    component.status = component.status === 'running' ? 'stopped' : 'running';
+    component.status = component.status === 1 ? 0 : 1;
     saveSystemData();
     viewStorageDashboard();
 }
@@ -353,10 +354,8 @@ window.editcomponentConfig = function(machineIdx, convIdx) {
     const newSpeed = prompt(`Sửa Tốc độ (RPM) cho ${component.name}:`, component.speed);
     if (newSpeed !== null) component.speed = parseInt(newSpeed) || 0;
 
-    const newDirection = prompt(`Sửa Hướng (Forward/Reverse) cho ${component.name}:`, component.direction || "Forward");
-    if (newDirection !== null && (newDirection == "Forward" || newDirection == "Reverse")) 
-        component.direction = newDirection;
-    else alert("Hướng không hợp lệ! Chỉ nhận Forward hoặc Reverse.");
+    // Toggle direction: get current direction and switch it
+    component.direction = component.direction === 1 ? 0 : 1;
     
     saveSystemData();
     viewStorageDashboard();
@@ -387,17 +386,24 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 // 9. REAL-TIME SOCKET.IO UPDATES
 // ==========================================
+// ==========================================
+// 9. REAL-TIME SOCKET.IO UPDATES
+// ==========================================
 const socket = io();
 
 // Listen for MQTT updates forwarded by the server
 socket.on('system-data-updated', (updatedData) => {
-    // Only update the UI if the user is currently logged in
-    if (currentUser) {
-        systemData = updatedData;
-        
-        // Re-render the dashboard to show the new component statuses (e.g., speed changes, running/stopped)
-        if (selectedStorageIndex !== null && selectedStorageIndex !== "") {
-            viewStorageDashboard();
-        }
+    // 1. Check if user is logged in
+    if (!currentUser) return;
+
+    console.log("⚡ Real-time update received from server!");
+
+    // 2. Update the local variable with the fresh MQTT data
+    systemData = updatedData;
+    
+    // 3. Re-render ONLY the dashboard content (if the user is currently viewing one)
+    // This keeps the dropdown selections intact and prevents a full page flash.
+    if (selectedStorageIndex !== null && selectedStorageIndex !== "") {
+        viewStorageDashboard();
     }
 });
