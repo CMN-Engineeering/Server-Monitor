@@ -2,14 +2,108 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
-const https = require('https'); // Import https module
+const https = require('https');
+const mqtt = require('mqtt');
+const { Server } = require('socket.io'); // Import Socket.io for real-time web UI updates
 
 const app = express();
 const PORT = 3000;
 
 const DATA_FILE = path.join(__dirname, 'sys-data.json');
 
-// Read SSL Certificates
+// --- 1. MQTT BROKER CONFIGURATION ---
+const MQTT_BROKER_URL = 'mqtt://localhost:1883'; 
+const mqttOptions = {
+    username: 'YOUR_USERNAME', 
+    password: 'YOUR_PASSWORD'  
+};
+
+let latestSysData = { factories: [] };
+
+if (fs.existsSync(DATA_FILE)) {
+    try {
+        latestSysData = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    } catch (err) {
+        console.error("Error reading initial sys-data.json:", err);
+    }
+}
+
+const mqttClient = mqtt.connect(MQTT_BROKER_URL, mqttOptions);
+
+mqttClient.on('connect', () => {
+    console.log(`✅ Connected to local Mosquitto broker at ${MQTT_BROKER_URL}`);
+    
+    // Subscribe to all machine topics using the + wildcard (factory_id/storage_id/machine_id)
+    mqttClient.subscribe('+/+/+', (err) => {
+        if (!err) {
+            console.log('✅ Subscribed to all machine topics pattern: +/+/+');
+        } else {
+            console.error('❌ Failed to subscribe to machine topics:', err);
+        }
+    });
+});
+
+// Listen for incoming messages from machines
+mqttClient.on('message', (topic, message) => {
+    // Expecting topic format: factoryId/storageId/machineId
+    const topicParts = topic.split('/');
+    
+    if (topicParts.length === 3) {
+        const [factoryId, storageId, machineId] = topicParts;
+        const rawMessage = message.toString(); // Get the raw string message for logging
+        try {
+            // Assume the machine publishes an array of its components' status
+            const updatedComponents = JSON.parse(message.toString());
+            console.log(`✅ Received data from ${machineId} on topic ${topic}`);
+
+            let dataUpdated = false;
+
+            // Traverse the tree to find the specific machine and update its components
+            for (let factory of latestSysData.factories) {
+                if (factory.id === factoryId && factory.storageUnits) {
+                    for (let storage of factory.storageUnits) {
+                        if (storage.id === storageId && storage.machineUnits) {
+                            for (let machine of storage.machineUnits) {
+                                if (machine.id === machineId) {
+                                    // Update the components array for this specific machine
+                                    machine.components = updatedComponents;
+                                    dataUpdated = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (dataUpdated) break;
+                    }
+                }
+                if (dataUpdated) break;
+            }
+
+            if (dataUpdated) {
+                // Save to local file
+                fs.writeFile(DATA_FILE, JSON.stringify(latestSysData, null, 4), 'utf8', (err) => {
+                    if (err) console.error("Lỗi khi ghi file backup:", err);
+                });
+                
+                // Broadcast the newly updated state to the web interface
+                if (io) {
+                    io.emit('system-data-updated', latestSysData);
+                }
+            } else {
+                console.log(`⚠️ Received data for unknown machine path: ${topic}`);
+            }
+
+        } catch (parseError) {
+            console.error(`❌ Invalid JSON received from MQTT on topic ${topic}`);
+            console.log(`⚠️ RAW TEXT RECEIVED WAS:`, rawMessage); // <--- ADD THIS LINE TO DEBUG
+        }
+    }
+});
+
+mqttClient.on('error', (err) => {
+    console.error('❌ MQTT Connection Error:', err);
+});
+
+// --- 2. EXPRESS HTTPS SERVER & SOCKET.IO CONFIGURATION ---
 const sslOptions = {
     key: fs.readFileSync(path.join(__dirname, 'key.pem')),
     cert: fs.readFileSync(path.join(__dirname, 'cert.pem'))
@@ -20,27 +114,36 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 app.get('/api/load-data', (req, res) => {
-    // Reads the latest data from the local broker/file whenever requested
-    fs.readFile(DATA_FILE, 'utf8', (err, data) => {
-        if (err) return res.json({ factories: [] }); 
-        try { res.json(JSON.parse(data)); } 
-        catch (parseError) { res.status(500).json({ error: "Invalid JSON format" }); }
-    });
+    res.json(latestSysData);
 });
 
 app.post('/api/save-data', (req, res) => {
     const newData = req.body;
+    latestSysData = newData;
+
+    // Optional: If you need to publish config changes back to the machines from the UI, 
+    // you would iterate and publish to specific topics here instead of a global 'sys-data' topic.
+
     fs.writeFile(DATA_FILE, JSON.stringify(newData, null, 4), 'utf8', (err) => {
         if (err) {
             console.error("Lỗi khi ghi file:", err);
             return res.status(500).json({ success: false, message: 'Lưu dữ liệu thất bại' });
         }
-        console.log("✅ Dữ liệu đã được lưu thành công vào sys-data.json");
+        
+        // Notify other web clients that the admin/operator made a change
+        io.emit('system-data-updated', latestSysData);
         res.json({ success: true, message: 'Đã lưu dữ liệu' });
     });
 });
 
-// Start HTTPS Server
-https.createServer(sslOptions, app).listen(PORT, '0.0.0.0', () => {
+// Start HTTPS Server with Socket.io attached
+const server = https.createServer(sslOptions, app);
+const io = new Server(server, { cors: { origin: "*" } });
+
+io.on('connection', (socket) => {
+    console.log(`💻 Web client connected: ${socket.id}`);
+});
+
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`✅ Backend server (HTTPS) đang chạy tại: https://localhost:${PORT}`);
 });

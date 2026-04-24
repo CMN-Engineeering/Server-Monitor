@@ -383,3 +383,21 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('app-content').style.display = 'none';
     }
 });
+
+// ==========================================
+// 9. REAL-TIME SOCKET.IO UPDATES
+// ==========================================
+const socket = io();
+
+// Listen for MQTT updates forwarded by the server
+socket.on('system-data-updated', (updatedData) => {
+    // Only update the UI if the user is currently logged in
+    if (currentUser) {
+        systemData = updatedData;
+        
+        // Re-render the dashboard to show the new component statuses (e.g., speed changes, running/stopped)
+        if (selectedStorageIndex !== null && selectedStorageIndex !== "") {
+            viewStorageDashboard();
+        }
+    }
+});

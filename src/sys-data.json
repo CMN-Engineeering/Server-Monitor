@@ -15,23 +15,23 @@
                             "components": [
                                 {
                                     "id": "conveyor-belt-1",
-                                    "name": "Băng chuyền 1",
-                                    "status": "running",
-                                    "speed": 100,
+                                    "name": "Cv1",
+                                    "status": "stopped",
+                                    "speed": 0,
                                     "direction": "Forward"
                                 },
                                 {
                                     "id": "conveyor-belt-2",
-                                    "name": "Băng chuyền 2",
+                                    "name": "Cv2",
                                     "status": "running",
-                                    "speed": 0,
+                                    "speed": 180,
                                     "direction": "Reverse"
                                 },
                                 {
                                     "id": "ssds",
                                     "name": "ddd",
                                     "status": "running",
-                                    "speed": 0,
+                                    "speed": 50,
                                     "direction": "Forward"
                                 }
                             ]
