@@ -3,6 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const https = require('https'); // Import https module
+const mqtt = require('mqtt'); // Import MQTT client
+const {Server} = require('socket.io'); // Import Socket.IO server
 
 const app = express();
 const PORT = 3000;
@@ -14,6 +16,13 @@ const sslOptions = {
     key: fs.readFileSync(path.join(__dirname, 'key.pem')),
     cert: fs.readFileSync(path.join(__dirname, 'cert.pem'))
 };
+
+// MQTT Client Setup
+const MQTT_BROKER_URL = 'mqtt://42.113.31.84:2248';
+const mqttClient = mqtt.connect(MQTT_BROKER_URL);
+const mqtt_username = 'amt';
+const mqtt_password = 'amt123456';
+
 
 app.use(cors()); 
 app.use(express.json()); 
