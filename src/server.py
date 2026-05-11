@@ -59,10 +59,10 @@ def update_data_from_mqtt(topic, payload):
                                 print(f"Motor 2 state : ", motor_2_state)
                                 
                                 
-                                if "motors" in machine and len(machine["motors"]) >= 2:
-                                    machine["motors"]["enabled"] = is_enabled
-                                    machine["motors"]["motor_1"]["state"] = motor_1_state
-                                    machine["motors"]["motor_2"]["state"] = motor_2_state                                
+                                # if "motors" in machine and len(machine["motors"]) >= 2:
+                                #     machine["motors"]["enabled"] = is_enabled
+                                #     machine["motors"]["motor_1"]["state"] = motor_1_state
+                                #     machine["motors"]["motor_2"]["state"] = motor_2_state                                
 
                             # 2. Update Inputs (Conveyors/Sensors) based on 'input'
                             if "input" in payload:
@@ -83,8 +83,7 @@ def update_data_from_mqtt(topic, payload):
                                     print("RPM : ", rpm)
                                     input_id = f"input_{k}"
                                     print("Input ID : ", input_id)
-                                    machine["inputs"][input_id]["status"] = input_status
-                                    print(1)
+                                    # machine["inputs"][input_id]["status"] = input_status
                                     machine["inputs"][input_id]["rpm"] = rpm
                                     
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
