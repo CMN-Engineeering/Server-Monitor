@@ -1,97 +1,54 @@
 {
     "factories": [
         {
-            "id": "factory1",
+            "id": "Factory_1",
+            "name": "Factory_1",
             "storageUnits": [
                 {
-                    "name": "Kho 1",
-                    "id": "storage1",
+                    "id": "Warehouse_1",
                     "machineUnits": [
                         {
-                            "id": "machine1",
-                            "name": "Máy 1",
-                            "type": "Bồn Chứa",
-                            "ip": "192.168.1.12",
-                            "components": [
-                                {
-                                    "id": "conveyor-belt-1",
-                                    "name": "Cv1",
-                                    "status": 1,
-                                    "speed": 312,
-                                    "direction": 0
+                            "id": "Machine_1",
+                            "inputs": {
+                                "input_1": {
+                                    "name": "INPUT 1",
+                                    "rpm": 0,
+                                    "status": 0
                                 },
-                                {
-                                    "id": "conveyor-belt-2",
-                                    "name": "Cv2",
-                                    "status": 1,
-                                    "speed": 180,
-                                    "direction": 1
+                                "input_2": {
+                                    "name": "INPUT 2",
+                                    "rpm": 38,
+                                    "status": 1
                                 },
-                                {
-                                    "id": "ssds",
-                                    "name": "ddd",
-                                    "status": 1,
-                                    "speed": 50,
-                                    "direction": 1
+                                "input_3": {
+                                    "name": "INPUT 3",
+                                    "rpm": 0,
+                                    "status": 0
+                                },
+                                "input_4": {
+                                    "name": "INPUT 4",
+                                    "rpm": 0,
+                                    "status": 0
                                 }
-                            ]
-                        },
-                        {
-                            "id": "machine2",
-                            "name": "Máy 2",
-                            "type": "Bồn Chứa",
-                            "ip": "192.168.1.14",
-                            "components": [
-                                {
-                                    "id": "conveyor-belt-1",
-                                    "name": "Băng chuyền 1",
-                                    "status": "1",
-                                    "speed": 150,
-                                    "direction": "0"
-                                },
-                                {
-                                    "id": "conveyor-belt-2",
-                                    "name": "Băng chuyền 2",
-                                    "status": "1",
-                                    "speed": 120,
-                                    "direction": "1"
-                                }
-                            ]
-                        }
-                    ]
-                },
-                {
-                    "id": "storage_1776847464643",
-                    "name": "Kho 2",
-                    "machineUnits": [
-                        {
-                            "id": "sss",
-                            "name": "Ucs",
-                            "type": "ccsc",
+                            },
                             "ip": "192.168.1.100",
-                            "components": [
-                                {
-                                    "id": "conveyor1",
-                                    "name": "Conveyor Belt 1",
-                                    "status": "1",
-                                    "speed": 0
+                            "motors": {
+                                "control_mode": 0,
+                                "enabled": 1,
+                                "motor_1": {
+                                    "name": "Motor 1",
+                                    "state": 0
                                 },
-                                {
-                                    "id": "conveyor2",
-                                    "name": "Conveyor Belt 2",
-                                    "status": "1",
-                                    "speed": 0
-                                },
-                                {
-                                    "id": "conv_1776847518419",
-                                    "name": "cscsc",
-                                    "status": 1,
-                                    "speed": 12,
-                                    "direction": 1
+                                "motor_2": {
+                                    "name": "Motor 2",
+                                    "state": 0
                                 }
-                            ]
+                            },
+                            "name": "Machine_1",
+                            "type": "scsc"
                         }
-                    ]
+                    ],
+                    "name": "Warehouse_1"
                 }
             ]
         }

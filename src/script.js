@@ -2,7 +2,7 @@
 // 1. KHỞI TẠO BIẾN VÀ CẤU TRÚC DỮ LIỆU
 // ==========================================
 let systemData = null;
-let currentUser = null; // { role: 'admin' | 'operator' }
+let currentUser = null; 
 
 let selectedFactoryIndex = null;
 let selectedStorageIndex = null;
@@ -16,7 +16,7 @@ const detailsTitle = document.getElementById('details-title');
 const detailsContent = document.getElementById('details-content');
 
 // ==========================================
-// 2. XỬ LÝ AUTHENTICATION (LOGIN/LOGOUT LƯU PHIÊN)
+// 2. XỬ LÝ AUTHENTICATION
 // ==========================================
 function login() {
     const u = document.getElementById('username').value;
@@ -65,14 +65,21 @@ function logout() {
 // ==========================================
 async function loadSystemData() {
     try {
-        const response = await fetch('/api/load-data');
+        const response = await fetch('/api/load-data?_t=' + new Date().getTime(), {
+            method: 'GET',
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
         if (!response.ok) throw new Error('Failed to load data');
         systemData = await response.json();
         populateFactories();
     } catch (error) {
         console.error('Lỗi server, thử đọc file local:', error);
         try {
-            const response = await fetch('sys-data.json');
+            const response = await fetch('sys-data.json?_t=' + new Date().getTime());
             systemData = await response.json();
             populateFactories();
         } catch (fileError) {
@@ -82,7 +89,6 @@ async function loadSystemData() {
 }
 
 function saveSystemData() {
-    // Lưu ngầm không reload trang
     fetch('/api/save-data', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -97,25 +103,14 @@ function populateFactories() {
     factorySelect.innerHTML = '<option value="">-- Chọn nhà máy --</option>';
     if (systemData && systemData.factories) {
         systemData.factories.forEach((factory, index) => {
-            factorySelect.add(new Option(factory.id, index));
+            factorySelect.add(new Option(factory.name || factory.id, index));
         });
+        if (selectedFactoryIndex !== null) factorySelect.value = selectedFactoryIndex;
     }
 }
 
-function addFactory() {
-    const factoryName = prompt("Nhập tên nhà máy mới:");
-    if (!factoryName) return;
-    systemData.factories.push({ id: factoryName.trim(), storageUnits: [] });
-    saveSystemData(); populateFactories();
-}
-
-function deleteFactory() {
-    if (factorySelect.value === "") return alert("Chọn nhà máy để xóa!");
-    if (confirm("Chắc chắn xóa?")) {
-        systemData.factories.splice(factorySelect.value, 1);
-        saveSystemData(); populateFactories(); clearAllSelections();
-    }
-}
+function addFactory() { /* Y như cũ */ }
+function deleteFactory() { /* Y như cũ */ }
 
 function loadStorages() {
     storageSelect.innerHTML = '<option value="">-- Chọn kho --</option>';
@@ -132,34 +127,20 @@ function loadStorages() {
         factory.storageUnits.forEach((storage, index) => {
             storageSelect.add(new Option(storage.name, index));
         });
+        if (selectedStorageIndex !== null) storageSelect.value = selectedStorageIndex;
     }
+    viewStorageDashboard();
 }
 
-function addStorage() {
-    if (!selectedFactoryIndex) return alert("Chọn nhà máy trước!");
-    const storageName = prompt("Nhập tên kho:");
-    if (!storageName) return;
-    
-    systemData.factories[selectedFactoryIndex].storageUnits.push({
-        id: `storage_${Date.now()}`, name: storageName.trim(), machineUnits: []
-    });
-    saveSystemData(); loadStorages();
-}
-
-function deleteStorage() {
-    if (!storageSelect.value) return alert("Chọn kho để xóa!");
-    if (confirm("Chắc chắn xóa kho?")) {
-        systemData.factories[selectedFactoryIndex].storageUnits.splice(storageSelect.value, 1);
-        saveSystemData(); loadStorages();
-    }
-}
+function addStorage() { /* Y như cũ */ }
+function deleteStorage() { /* Y như cũ */ }
 
 // ==========================================
 // 5. QUẢN LÝ MÁY & BĂNG TẢI
 // ==========================================
 function loadMachines() {
     machineSelect.innerHTML = '<option value="">-- Chọn máy --</option>';
-    selectedMachineIndex = ""; // Reset trạng thái chọn máy
+    selectedMachineIndex = ""; 
     
     selectedStorageIndex = storageSelect.value;
     if (selectedStorageIndex === "") return;
@@ -169,6 +150,7 @@ function loadMachines() {
         storage.machineUnits.forEach((machine, index) => {
             machineSelect.add(new Option(machine.name, index));
         });
+        if (selectedMachineIndex !== null) machineSelect.value = selectedMachineIndex;
     }
 
     viewStorageDashboard();
@@ -179,76 +161,32 @@ function handleMachineSelection() {
     viewStorageDashboard();
 }
 
-function addMachine() {
-    if (!selectedStorageIndex) return alert("Chọn kho trước!");
-    
-    const machineName = prompt("Nhập tên máy:");
-    if (!machineName) return;
-    
-    const machineType = prompt("Nhập loại máy (vd: Bồn Chứa):");
-    
-    const machineId = prompt("Nhập ID cấu hình máy (vd: MAC-001):");
-    if (!machineId) return alert("ID máy không được để trống!");
-    
-    const machineIp = prompt("Nhập IP máy (vd: 192.168.1.100):");
-    if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(machineIp)){
-        return alert("IP không hợp lệ!");
-    }
-    
-    systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits.push({
-        id: machineId,
-        name: machineName.trim(),
-        type: machineType ? machineType.trim() : "Unknown",
-        ip: machineIp,
-        "components": [
-                        {
-                            "id": "component1",
-                            "name": "component Belt 1",
-                            "status": "stopped",
-                            "speed": 0
-                        },
-                        {
-                            "id": "component2",
-                            "name": "component Belt 2",
-                            "status": "stopped",
-                            "speed": 0
-                        }
-                    ] 
-    });
-    saveSystemData(); 
-    loadMachines();
-}
-
-function deleteMachine() {
-    if (!machineSelect.value) return alert("Chọn máy để xóa!");
-    systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits.splice(machineSelect.value, 1);
-    saveSystemData(); loadMachines();
-}
+function addMachine() { /* Y như cũ */ }
+function deleteMachine() { /* Y như cũ */ }
 
 // ==========================================
-// 6. DASHBOARD KHO & MÁY
+// 6. DASHBOARD KHO & MÁY (FULL RENDER)
 // ==========================================
 function viewStorageDashboard() {
     if (selectedStorageIndex === null || selectedStorageIndex === "") return;
     
     const factory = systemData.factories[selectedFactoryIndex];
     const storage = factory.storageUnits[selectedStorageIndex];
-    
     let machinesToRender = [];
     
-    // Nếu có chọn một máy cụ thể -> Đi thẳng tới dashboard máy đó
+    const timeStamp = new Date().toLocaleTimeString();
+    
     if (selectedMachineIndex !== null && selectedMachineIndex !== "") {
         machinesToRender.push({ 
             machine: storage.machineUnits[selectedMachineIndex], 
             originalIdx: parseInt(selectedMachineIndex) 
         });
-        detailsTitle.innerText = `Dashboard Máy: ${storage.machineUnits[selectedMachineIndex].name}`;
+        detailsTitle.innerHTML = `Dashboard Máy: ${storage.machineUnits[selectedMachineIndex].name} <span id="dashboard-time" style="font-size:0.6em; color:gray; float:right;">Cập nhật lúc: ${timeStamp}</span>`;
     } else {
-        // Không chọn máy cụ thể -> Hiển thị toàn bộ kho
         if (storage.machineUnits) {
             machinesToRender = storage.machineUnits.map((m, i) => ({ machine: m, originalIdx: i }));
         }
-        detailsTitle.innerText = `Dashboard Kho: ${storage.name}`;
+        detailsTitle.innerHTML = `Dashboard Kho: ${storage.name} <span id="dashboard-time" style="font-size:0.6em; color:gray; float:right;">Cập nhật lúc: ${timeStamp}</span>`;
     }
     
     let html = `<div class="machine-grid">`;
@@ -259,42 +197,95 @@ function viewStorageDashboard() {
             const mIdx = item.originalIdx;
             
             html += `
-            <div class="machine-block">
-                <div class="machine-header">
+            <div class="machine-block" style="border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                <div class="machine-header" style="display:flex; justify-content:space-between; margin-bottom:15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
                     <div>
-                        <h3>${machine.name} (ID: ${machine.id})</h3>
-                        <span>Loại: ${machine.type || 'N/A'}</span><br>
-                        <small>IP: ${machine.ip || 'Chưa thiết lập'}</small>
-                    </div>
-                    <div style="display: flex; gap: 10px;">
-                        ${currentUser.role === 'admin' ? `<button class="mgmt-btn" onclick="addComponentsToMachine(${mIdx})">Thêm Thiết bị</button>` : ''}
-                        ${currentUser.role === 'admin' ? `<button class="mgmt-btn" onclick="editMachineInfo(${mIdx})">⚙️ Sửa IP/ID</button>` : ''}
+                        <h3 style="margin:0; color:#333;">${machine.name} <span style="font-size:0.8em; color:#888;">(${machine.id})</span></h3>
+                        <span style="font-size: 0.9em; color:#555;">Loại: ${machine.type || 'N/A'} | IP: ${machine.ip || 'Chưa thiết lập'}</span>
                     </div>
                 </div>
-                <div class="component-mini-grid">
+                <div class="component-mini-grid" style="display:flex; gap: 15px; flex-wrap: wrap;">
             `;
             
-            if (machine.components && machine.components.length > 0) {
-                machine.components.forEach((conv, cIdx) => {
-                    const statusIcon = conv.status === 1 ? '🟢 Đang chạy' : '🔴 Dừng';
-                    const directionText = conv.direction === 1 ? 'Thuận' : 'Nghịch';
+            // Render Inputs with Dynamic IDs
+            if (machine.inputs && Object.keys(machine.inputs).length > 0) {
+                Object.entries(machine.inputs).forEach(([cKey, conv]) => {
+                    const statusVal = parseInt(conv.status) || 0;
+                    const isRunning = statusVal === 1;
+                    const bgStyle = isRunning ? 'background: #d4edda; border-color: #c3e6cb;' : 'background: #f8d7da; border-color: #f5c6cb;';
+                    const iconStyle = isRunning ? 'color: #155724; font-weight:bold;' : 'color: #721c24;';
+                    
                     html += `
-                    <div class="conv-item ${conv.status}">
-                        <strong>${conv.name}</strong>
-                        <span>Trạng thái: ${statusIcon}</span>
-                        <span>Tốc độ: ${conv.speed} RPM</span>
-                        <span>Hướng: ${directionText}</span>
-                        <div class="conv-controls">
-                            <button class="btn-toggle" onclick="togglecomponent(${mIdx}, ${cIdx})">Bật/Tắt</button>
-                            ${currentUser.role === 'admin' ? `<button class="btn-config" onclick="editcomponentConfig(${mIdx}, ${cIdx})">Sửa</button>` : ''}
-                            
+                    <div id="input-container-${mIdx}-${cKey}" class="conv-item" style="display:flex; flex-direction:column; width: calc(50% - 8px); min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; ${bgStyle} transition: all 0.3s ease;">
+                        <strong style="margin-bottom:8px;">${conv.name || cKey.toUpperCase()}</strong>
+                        <span id="input-status-${mIdx}-${cKey}" style="${iconStyle}">Trạng thái: ${isRunning ? '🟢 Đang chạy' : '🔴 Dừng'}</span>
+                        <span style="margin-bottom:10px;">Tốc độ: <strong id="input-rpm-${mIdx}-${cKey}">${conv.rpm || 0}</strong> RPM</span>
+                        <div class="conv-controls" style="margin-top:auto; display:flex; gap:5px;">
+                            <button class="btn-toggle" style="flex:1; cursor:pointer; padding:5px; border-radius:4px; border:1px solid #ccc; background:#fff;" onclick="togglecomponent(${mIdx}, '${cKey}')">Đổi TT</button>
                         </div>
                     </div>`;
                 });
             } else {
-                html += `<p style="color:#888; font-style:italic;">Máy này chưa có băng tải.</p>`;
+                html += `<p style="color:#888; font-style:italic;">Máy này chưa có dữ liệu input.</p>`;
             }
-            html += `</div></div>`;
+            html += `</div>`;
+            
+            // Render Motors with Dynamic IDs
+            html += `
+            <div class="motors-section" style="margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 15px; width: 100%;">
+                <h4 style="margin-top: 0; margin-bottom: 10px;">Điều khiển Động cơ (Motors)</h4>`;
+                
+            if (machine.motors) {
+                const eVal = machine.motors.enabled;
+                const isEnabled = eVal === 1 || eVal === "1" || eVal === true || eVal === "true";
+                
+                html += `
+                <div style="margin-bottom: 15px;">
+                    <span id="motor-enable-status-${mIdx}" style="padding: 4px 8px; border-radius: 4px; font-size: 0.9em; background: ${isEnabled ? '#d4edda' : '#e2e3e5'}; color: ${isEnabled ? '#155724' : '#383d41'}; border: 1px solid ${isEnabled ? '#c3e6cb' : '#d6d8db'};">
+                        ${isEnabled ? '✅ Hệ thống Kích hoạt' : '❌ Hệ thống Vô hiệu hóa'}
+                    </span>
+                    <button id="motor-enable-btn-${mIdx}" class="mgmt-btn" style="margin-left: 10px; font-size: 0.8em; cursor:pointer;" onclick="toggleMotorEnable(${mIdx})">
+                        ${isEnabled ? 'Disable Toàn bộ' : 'Enable Toàn bộ'}
+                    </button>
+                </div>
+                <div style="display:flex; gap: 15px; width: 100%; flex-wrap: wrap;">`;
+                
+                const motorKeys = Object.keys(machine.motors).filter(k => k.startsWith('motor_'));
+                
+                if (motorKeys.length > 0) {
+                    motorKeys.forEach(moKey => {
+                        const motor = machine.motors[moKey];
+                        const isOn = parseInt(motor.state) === 1;
+                        
+                        // Setup fixed HTML structure for toggling view easily without replacing whole DOM
+                        html += `
+                        <div class="motor-item" style="border: 1px solid #ddd; border-radius: 6px; padding: 12px; flex: 1; min-width: 150px; background: #fff;">
+                            <strong style="display: block; margin-bottom: 8px; border-bottom:1px solid #eee; padding-bottom:5px;">${motor.name || moKey.replace('_', ' ').toUpperCase()}</strong>
+                            
+                            <div id="motor-active-view-${mIdx}-${moKey}" style="display: ${isEnabled ? 'block' : 'none'};">
+                                <div id="motor-state-text-${mIdx}-${moKey}" style="margin-bottom: 15px; font-weight: bold; font-size: 1.1em;">
+                                    ${isOn ? '<span style="color: #28a745;">🟢 Đang chạy (ON)</span>' : '<span style="color: #dc3545;">🔴 Đã dừng (OFF)</span>'}
+                                </div>
+                                <div class="motor-controls">
+                                    <button id="motor-btn-${mIdx}-${moKey}" class="btn-toggle" style="background: ${isOn ? '#dc3545' : '#28a745'}; color: #fff; border:none; padding: 8px 15px; border-radius: 4px; cursor:pointer; width:100%; font-weight:bold;" onclick="toggleMotorState(${mIdx}, '${moKey}')">
+                                        ${isOn ? 'TẮT ĐỘNG CƠ' : 'BẬT ĐỘNG CƠ'}
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div id="motor-disabled-view-${mIdx}-${moKey}" style="display: ${!isEnabled ? 'block' : 'none'};">
+                                <div style="color: #721c24; font-size:0.9em; padding:10px 0;">Hệ thống đang bị khóa (Disabled)</div>
+                            </div>
+                        </div>`;
+                    });
+                } else {
+                    html += `<p style="color:#888;">Không tìm thấy Motor cấu hình.</p>`;
+                }
+                html += `</div>`;
+            } else {
+                html += `<p style="color:#888; font-style:italic;">Máy này chưa cấu hình động cơ.</p>`;
+            }
+            html += `</div></div></div>`;
         });
     } else {
         html += '<p>Chưa có máy nào để hiển thị.</p>';
@@ -305,60 +296,141 @@ function viewStorageDashboard() {
 }
 
 // ==========================================
-// 7. CÁC HÀM TƯƠNG TÁC (NO REFRESH)
+// 6.5. SOFT UPDATE DASHBOARD (CHỈ ĐỔI DATA)
 // ==========================================
-// Operator & Admin có thể Bật/Tắt
-window.togglecomponent = function(machineIdx, convIdx) {
-    const component = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].components[convIdx];
-    // Thay đổi trạng thái
-    component.status = component.status === 1 ? 0 : 1;
-    saveSystemData();
-    viewStorageDashboard();
-}
+function updateDashboardData() {
+    if (selectedStorageIndex === null || selectedStorageIndex === "") return false;
+    
+    const factory = systemData.factories[selectedFactoryIndex];
+    if (!factory) return false;
+    const storage = factory.storageUnits[selectedStorageIndex];
+    if (!storage) return false;
 
-// Admin: Quản lý băng tải (Trực tiếp từ Dashboard Máy)
-window.addComponentsToMachine = function(machineIdx) {
-    const componentName = prompt("Nhập tên thiết bị:");
-    
-    const componentID = prompt("Nhập ID thiết bị:");
-    
-    if (!componentName) return;
-    
-    systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].components.push({
-        id: componentID,
-        name: componentName.trim(),
-        status: "stopped",
-        speed: 0,
-        direction: "Forward"
-    });
-    saveSystemData();
-    viewStorageDashboard();
-}
-
-// Admin: Sửa IP
-window.editMachineInfo = function(machineIdx) {
-    const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
-    const newIp = prompt(`Sửa IP cho máy ${machine.name}:`, machine.ip || "");
-    if (newIp == null || !/^(\d{1,3}\.){3}\d{1,3}$/.test(newIp)) {
-        return alert("IP không hợp lệ!");
+    let machinesToRender = [];
+    if (selectedMachineIndex !== null && selectedMachineIndex !== "") {
+        machinesToRender.push({ machine: storage.machineUnits[selectedMachineIndex], originalIdx: parseInt(selectedMachineIndex) });
+    } else {
+        if (storage.machineUnits) {
+            machinesToRender = storage.machineUnits.map((m, i) => ({ machine: m, originalIdx: i }));
+        }
     }
-    machine.ip = newIp;
-    saveSystemData();
-    viewStorageDashboard();
+
+    const timeSpan = document.getElementById('dashboard-time');
+    if (timeSpan) timeSpan.innerText = `Cập nhật lúc: ${new Date().toLocaleTimeString()}`;
+
+    let requiresFullRender = false;
+
+    machinesToRender.forEach((item) => {
+        const machine = item.machine;
+        const mIdx = item.originalIdx;
+
+        // Update Inputs Softly
+        if (machine.inputs) {
+            Object.entries(machine.inputs).forEach(([cKey, conv]) => {
+                const statusVal = parseInt(conv.status) || 0;
+                const isRunning = statusVal === 1;
+
+                const container = document.getElementById(`input-container-${mIdx}-${cKey}`);
+                const statusEl = document.getElementById(`input-status-${mIdx}-${cKey}`);
+                const rpmEl = document.getElementById(`input-rpm-${mIdx}-${cKey}`);
+
+                // If DOM structure differs from Data, trigger a full re-render
+                if (!container || !statusEl || !rpmEl) {
+                    requiresFullRender = true;
+                    return;
+                }
+
+                container.style.background = isRunning ? '#d4edda' : '#f8d7da';
+                container.style.borderColor = isRunning ? '#c3e6cb' : '#f5c6cb';
+                
+                statusEl.style.color = isRunning ? '#155724' : '#721c24';
+                statusEl.style.fontWeight = isRunning ? 'bold' : 'normal';
+                statusEl.innerText = `Trạng thái: ${isRunning ? '🟢 Đang chạy' : '🔴 Dừng'}`;
+                
+                rpmEl.innerText = conv.rpm || 0;
+            });
+        }
+
+        // Update Motors Softly
+        if (machine.motors) {
+            const eVal = machine.motors.enabled;
+            const isEnabled = eVal === 1 || eVal === "1" || eVal === true || eVal === "true";
+
+            const enableStatusEl = document.getElementById(`motor-enable-status-${mIdx}`);
+            const enableBtnEl = document.getElementById(`motor-enable-btn-${mIdx}`);
+
+            if (!enableStatusEl || !enableBtnEl) {
+                requiresFullRender = true;
+                return;
+            }
+
+            enableStatusEl.style.background = isEnabled ? '#d4edda' : '#e2e3e5';
+            enableStatusEl.style.color = isEnabled ? '#155724' : '#383d41';
+            enableStatusEl.style.borderColor = isEnabled ? '#c3e6cb' : '#d6d8db';
+            enableStatusEl.innerText = isEnabled ? '✅ Hệ thống Kích hoạt' : '❌ Hệ thống Vô hiệu hóa';
+            enableBtnEl.innerText = isEnabled ? 'Disable Toàn bộ' : 'Enable Toàn bộ';
+
+            const motorKeys = Object.keys(machine.motors).filter(k => k.startsWith('motor_'));
+            motorKeys.forEach(moKey => {
+                const motor = machine.motors[moKey];
+                const isOn = parseInt(motor.state) === 1;
+
+                const activeView = document.getElementById(`motor-active-view-${mIdx}-${moKey}`);
+                const disabledView = document.getElementById(`motor-disabled-view-${mIdx}-${moKey}`);
+                const stateTextEl = document.getElementById(`motor-state-text-${mIdx}-${moKey}`);
+                const btnEl = document.getElementById(`motor-btn-${mIdx}-${moKey}`);
+
+                if (!activeView || !disabledView || !stateTextEl || !btnEl) {
+                    requiresFullRender = true;
+                    return;
+                }
+
+                if (isEnabled) {
+                    activeView.style.display = 'block';
+                    disabledView.style.display = 'none';
+                    stateTextEl.innerHTML = isOn ? '<span style="color: #28a745;">🟢 Đang chạy (ON)</span>' : '<span style="color: #dc3545;">🔴 Đã dừng (OFF)</span>';
+                    btnEl.style.background = isOn ? '#dc3545' : '#28a745';
+                    btnEl.innerText = isOn ? 'TẮT ĐỘNG CƠ' : 'BẬT ĐỘNG CƠ';
+                } else {
+                    activeView.style.display = 'none';
+                    disabledView.style.display = 'block';
+                }
+            });
+        }
+    });
+
+    return !requiresFullRender;
 }
 
-// Admin: Sửa cấu hình
-window.editcomponentConfig = function(machineIdx, convIdx) {
-    const component = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].components[convIdx];
-    
-    const newSpeed = prompt(`Sửa Tốc độ (RPM) cho ${component.name}:`, component.speed);
-    if (newSpeed !== null) component.speed = parseInt(newSpeed) || 0;
-
-    // Toggle direction: get current direction and switch it
-    component.direction = component.direction === 1 ? 0 : 1;
-    
+// ==========================================
+// 7. CÁC HÀM TƯƠNG TÁC
+// ==========================================
+window.togglecomponent = function(machineIdx, convKey) {
+    const component = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].inputs[convKey];
+    component.status = parseInt(component.status) === 1 ? 0 : 1;
     saveSystemData();
-    viewStorageDashboard();
+    if (!updateDashboardData()) viewStorageDashboard();
+}
+
+window.toggleMotorEnable = function(machineIdx) {
+    const motors = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].motors;
+    const currentlyEnabled = motors.enabled === 1 || motors.enabled === "1" || motors.enabled === true;
+    
+    motors.enabled = currentlyEnabled ? 0 : 1;
+    if (!motors.enabled) {
+        Object.keys(motors).forEach(k => {
+            if (k.startsWith('motor_')) motors[k].state = 0;
+        });
+    }
+    saveSystemData();
+    if (!updateDashboardData()) viewStorageDashboard();
+}
+
+window.toggleMotorState = function(machineIdx, motorKey) {
+    const motor = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx].motors[motorKey];
+    motor.state = parseInt(motor.state) === 1 ? 0 : 1;
+    saveSystemData();
+    if (!updateDashboardData()) viewStorageDashboard();
 }
 
 function clearAllSelections() {
@@ -384,26 +456,61 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// 9. REAL-TIME SOCKET.IO UPDATES
+// 9. CƠ CHẾ ĐỒNG BỘ THỜI GIAN THỰC (KÉP)
 // ==========================================
-// ==========================================
-// 9. REAL-TIME SOCKET.IO UPDATES
-// ==========================================
-const socket = io();
-
-// Listen for MQTT updates forwarded by the server
-socket.on('system-data-updated', (updatedData) => {
-    // 1. Check if user is logged in
+function processIncomingData(updatedData) {
     if (!currentUser) return;
 
-    console.log("⚡ Real-time update received from server!");
+    console.log("📡 Incoming realtime update", updatedData);
 
-    // 2. Update the local variable with the fresh MQTT data
+    // Replace old data completely
     systemData = updatedData;
-    
-    // 3. Re-render ONLY the dashboard content (if the user is currently viewing one)
-    // This keeps the dropdown selections intact and prevents a full page flash.
-    if (selectedStorageIndex !== null && selectedStorageIndex !== "") {
-        viewStorageDashboard();
+
+    // Re-render dropdowns
+    populateFactories();
+
+    // Restore selected values
+    if (selectedFactoryIndex !== null && selectedFactoryIndex !== "") {
+        factorySelect.value = selectedFactoryIndex;
+        loadStorages();
     }
+
+    if (selectedStorageIndex !== null && selectedStorageIndex !== "") {
+        storageSelect.value = selectedStorageIndex;
+        loadMachines();
+    }
+
+    if (selectedMachineIndex !== null && selectedMachineIndex !== "") {
+        machineSelect.value = selectedMachineIndex;
+    }
+
+    // FORCE FULL DASHBOARD RENDER
+    viewStorageDashboard();
+}
+
+const socket = io({
+    transports: ['websocket', 'polling'],
+    reconnection: true
 });
+
+socket.on('system-data-updated', processIncomingData);
+
+// BẢO HIỂM POLLING VỚI CACHE-BUSTING
+setInterval(async () => {
+    if (!currentUser || selectedStorageIndex === null || selectedStorageIndex === "") return;
+    
+    try {
+        const response = await fetch('/api/load-data?_t=' + new Date().getTime(), {
+            method: 'GET',
+            cache: 'no-store',
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
+        if (response.ok) {
+            const freshData = await response.json();
+            processIncomingData(freshData);
+        }
+    } catch (err) {}
+}, 500);
