@@ -57,12 +57,13 @@ def update_data_from_mqtt(topic, payload):
                                 print(f"Control Mode : ", control_mode)
                                 print(f"Motor 1 state : ", motor_1_state)
                                 print(f"Motor 2 state : ", motor_2_state)
+                                machine["motors"]["enabled"] = is_enabled
+                                machine["motors"]["motor_1"]["state"] = motor_1_state
+                                machine["motors"]["motor_2"]["state"] = motor_2_state                                
+                                
                                 
                                 
                                 # if "motors" in machine and len(machine["motors"]) >= 2:
-                                #     machine["motors"]["enabled"] = is_enabled
-                                #     machine["motors"]["motor_1"]["state"] = motor_1_state
-                                #     machine["motors"]["motor_2"]["state"] = motor_2_state                                
 
                             # 2. Update Inputs (Conveyors/Sensors) based on 'input'
                             if "input" in payload:
