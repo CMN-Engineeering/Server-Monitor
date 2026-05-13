@@ -13,22 +13,22 @@
                                 "input_1": {
                                     "name": "INPUT 1",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 },
                                 "input_2": {
                                     "name": "INPUT 2",
-                                    "rpm": 38,
+                                    "rpm": 0,
                                     "status": 1
                                 },
                                 "input_3": {
                                     "name": "INPUT 3",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 },
                                 "input_4": {
                                     "name": "INPUT 4",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 }
                             },
                             "ip": "192.168.1.100",
