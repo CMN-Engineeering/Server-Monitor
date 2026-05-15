@@ -172,10 +172,8 @@ function viewStorageDashboard() {
             <h4 style="margin: 10px 0;">Động cơ (Motors)</h4>`;
         
         if (machine.motors) {
-            // Kiểm tra trạng thái enabled (xử lý cả boolean và số)
             const isMotorsEnabled = machine.motors.enabled === true || parseInt(machine.motors.enabled) === 1;
             
-            // Nút điều khiển tổng (Disable/Enable)
             html += `
             <div style="margin-bottom: 15px;">
                 <button id="motor-enable-btn-${mIdx}" style="background:${isMotorsEnabled ? '#6c757d' : '#007bff'}; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="toggleMotorEnable(${mIdx})">
@@ -185,7 +183,6 @@ function viewStorageDashboard() {
             
             <div id="motor-list-container-${mIdx}" class="component-mini-grid" style="display:${isMotorsEnabled ? 'flex' : 'none'}; gap: 15px; flex-wrap: wrap;">`;
 
-            // Render các motor con bên trong
             const motorKeys = Object.keys(machine.motors).filter(k => k.startsWith('motor_'));
             motorKeys.forEach(moKey => {
                 const motor = machine.motors[moKey];
@@ -201,10 +198,10 @@ function viewStorageDashboard() {
                 </div>`;
             });
             
-            html += `</div>`; // Đóng motor-list-container
+            html += `</div>`; 
         }
 
-        html += `</div>`; // Đóng machine-block
+        html += `</div>`; 
     });
     html += `</div>`;
     detailsContent.innerHTML = html;
@@ -241,7 +238,6 @@ function updateDashboardData() {
         if (machine.motors) {
             const isMotorsEnabled = machine.motors.enabled === true || parseInt(machine.motors.enabled) === 1;
             
-            // Cập nhật nút Disable/Enable và ẩn/hiện container
             const enableBtnEl = document.getElementById(`motor-enable-btn-${mIdx}`);
             const motorListContainer = document.getElementById(`motor-list-container-${mIdx}`);
             
@@ -251,7 +247,6 @@ function updateDashboardData() {
                 motorListContainer.style.display = isMotorsEnabled ? 'flex' : 'none';
             }
 
-            // Đồng bộ trạng thái từng motor con
             const motorKeys = Object.keys(machine.motors).filter(k => k.startsWith('motor_'));
             motorKeys.forEach(moKey => {
                 const motor = machine.motors[moKey];
@@ -292,11 +287,9 @@ window.toggleMotorEnable = function(machineIdx) {
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
     
     if (machine.motors) {
-        // Lấy trạng thái hiện tại và đảo ngược
         const currentState = machine.motors.enabled;
         let newState;
         
-        // Xử lý linh hoạt cho cả boolean và number (1/0)
         if (typeof currentState === 'boolean') {
             newState = !currentState;
         } else {
@@ -305,7 +298,7 @@ window.toggleMotorEnable = function(machineIdx) {
         
         machine.motors.enabled = newState;
         saveSystemData();
-        viewStorageDashboard(); // Gọi lại render ngay lập tức để cập nhật UI mượt mà
+        viewStorageDashboard(); 
     }
 }
 
@@ -327,3 +320,193 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('login-screen').style.display = 'flex';
     }
 });
+
+// ==========================================
+// 9. QUẢN LÝ THÊM / XÓA (ADMIN ONLY)
+// ==========================================
+
+function checkAdminAccess() {
+    if (!currentUser || currentUser.role !== 'admin') {
+        alert("Thao tác bị từ chối: Chỉ Administrator mới có quyền thực hiện!");
+        return false;
+    }
+    return true;
+}
+
+// --- QUẢN LÝ NHÀ MÁY (FACTORY) ---
+
+function addFactory() {
+    if (!checkAdminAccess()) return;
+    
+    const factoryName = prompt("Nhập TÊN Nhà máy mới (Name):");
+    if (!factoryName || factoryName.trim() === "") return;
+
+    const factoryId = prompt("Nhập ID Nhà máy mới (ID - Không có khoảng trắng):", "Factory_X");
+    if (!factoryId || factoryId.trim() === "") return;
+
+    if (!systemData) systemData = { factories: [] };
+    if (!systemData.factories) systemData.factories = [];
+    
+    systemData.factories.push({
+        id: factoryId.trim(),
+        name: factoryName.trim(),
+        storageUnits: []
+    });
+    
+    saveSystemData();
+    populateFactories();
+}
+
+function deleteFactory() {
+    if (!checkAdminAccess()) return;
+    
+    if (selectedFactoryIndex === "" || selectedFactoryIndex === null) {
+        alert("Vui lòng chọn một nhà máy để xóa!");
+        return;
+    }
+    
+    const factory = systemData.factories[selectedFactoryIndex];
+    if (confirm(`Bạn có chắc chắn muốn xóa nhà máy "${factory.name}" và toàn bộ dữ liệu bên trong không?`)) {
+        systemData.factories.splice(selectedFactoryIndex, 1);
+        selectedFactoryIndex = ""; 
+        
+        saveSystemData();
+        populateFactories();
+        loadStorages(); 
+    }
+}
+
+// --- QUẢN LÝ KHO (STORAGE) ---
+
+function addStorage() {
+    if (!checkAdminAccess()) return;
+    
+    if (selectedFactoryIndex === "" || selectedFactoryIndex === null) {
+        alert("Vui lòng chọn một nhà máy trước khi thêm kho!");
+        return;
+    }
+
+    const storageName = prompt("Nhập TÊN Kho mới (Name):");
+    if (!storageName || storageName.trim() === "") return;
+
+    const storageId = prompt("Nhập ID Kho mới (ID - Không có khoảng trắng):", "Warehouse_X");
+    if (!storageId || storageId.trim() === "") return;
+
+    const factory = systemData.factories[selectedFactoryIndex];
+    if (!factory.storageUnits) factory.storageUnits = [];
+    
+    factory.storageUnits.push({
+        id: storageId.trim(),
+        name: storageName.trim(),
+        machineUnits: []
+    });
+    
+    saveSystemData();
+    loadStorages();
+    storageSelect.value = factory.storageUnits.length - 1;
+    loadMachines(); 
+}
+
+function deleteStorage() {
+    if (!checkAdminAccess()) return;
+    
+    if (selectedFactoryIndex === "" || selectedStorageIndex === "" || selectedStorageIndex === null) {
+        alert("Vui lòng chọn một kho để xóa!");
+        return;
+    }
+
+    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
+    if (confirm(`Bạn có chắc chắn muốn xóa kho "${storage.name}" và các máy bên trong không?`)) {
+        systemData.factories[selectedFactoryIndex].storageUnits.splice(selectedStorageIndex, 1);
+        selectedStorageIndex = ""; 
+        
+        saveSystemData();
+        loadStorages();
+    }
+}
+
+// --- QUẢN LÝ MÁY (MACHINE) ---
+
+function addMachine() {
+    if (!checkAdminAccess()) return;
+    
+    if (selectedStorageIndex === "" || selectedStorageIndex === null) {
+        alert("Vui lòng chọn một kho trước khi thêm máy!");
+        return;
+    }
+
+    // 1. Thu thập thông tin cơ bản
+    const machineName = prompt("Nhập TÊN Máy mới (Name):", "Machine_New");
+    if (!machineName || machineName.trim() === "") return;
+
+    const machineId = prompt("Nhập ID Máy mới (ID):", "Machine_X");
+    if (!machineId || machineId.trim() === "") return;
+
+    const machineType = prompt("Nhập loại máy (Type):", "scsc");
+    const machineIp = prompt("Nhập địa chỉ IP máy:", "192.168.1.100");
+
+    // 2. Thu thập số lượng component
+    const numInputsStr = prompt("Nhập số lượng Inputs cho máy này (VD: 4):", "4");
+    const numInputs = parseInt(numInputsStr) || 0;
+
+    const numMotorsStr = prompt("Nhập số lượng Motors cho máy này (VD: 2):", "2");
+    const numMotors = parseInt(numMotorsStr) || 0;
+
+    // 3. Xây dựng object inputs
+    let inputsObj = {};
+    for (let i = 1; i <= numInputs; i++) {
+        inputsObj[`input_${i}`] = {
+            name: `INPUT ${i}`,
+            rpm: 0,
+            status: 0
+        };
+    }
+
+    // 4. Xây dựng object motors
+    let motorsObj = {
+        control_mode: 0,
+        enabled: 0
+    };
+    for (let i = 1; i <= numMotors; i++) {
+        motorsObj[`motor_${i}`] = {
+            name: `Motor ${i}`,
+            state: 0
+        };
+    }
+
+    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
+    if (!storage.machineUnits) storage.machineUnits = [];
+    
+    // 5. Khởi tạo và đẩy cấu trúc máy mới vào hệ thống
+    storage.machineUnits.push({
+        id: machineId.trim(),
+        name: machineName.trim(),
+        type: machineType ? machineType.trim() : "",
+        ip: machineIp ? machineIp.trim() : "",
+        inputs: inputsObj,
+        motors: motorsObj
+    });
+    
+    saveSystemData();
+    loadMachines();
+}
+
+function deleteMachine() {
+    if (!checkAdminAccess()) return;
+    
+    if (selectedMachineIndex === "" || selectedMachineIndex === null) {
+        alert("Vui lòng chọn một máy cụ thể trong dropdown để xóa!");
+        return;
+    }
+
+    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
+    const machine = storage.machineUnits[selectedMachineIndex];
+    
+    if (confirm(`Bạn có chắc chắn muốn xóa máy "${machine.name}" không?`)) {
+        storage.machineUnits.splice(selectedMachineIndex, 1);
+        selectedMachineIndex = ""; 
+        
+        saveSystemData();
+        loadMachines();
+    }
+}
