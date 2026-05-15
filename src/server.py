@@ -21,9 +21,11 @@ def update_data_from_mqtt(topic, payload):
     parts = topic.split('/')
     if len(parts) < 4:
         return
-    f_id = parts[0]   # Factory_22
-    s_id = parts[1]   # Warehouse_1
-    m_id = parts[3]   # Machine_2
+    
+    f_id = parts[0]   # Factory_id
+    s_id = parts[1]   # Warehouse_id
+    # parts[2] is Tank_Conveyor
+    m_id = parts[3]   # Machine_id (Make sure your topic is .../Tank_Conveyor/Machine_ID/motor_status)
 
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
@@ -39,50 +41,62 @@ def update_data_from_mqtt(topic, payload):
                 if storage['id'] == s_id:
                     for machine in storage.get('machineUnits', []):
                         if machine['id'] == m_id:
-                            updated = True
                             
-                            # 1. Update Motors
-                            if 'motor_status' in payload:
-                                status = payload["motor_status"]
-                                # Note: Ensure types match what script.js expects (0/1 or True/False)
-                                machine["motors"]["enabled"] = status.get("Enabled")
+                            # 1. Update Motors based on payload
+                            if "motor_status" in topic or "Control Mode" in payload:
+                                # Safely get the Control Mode as a string
+                                control_mode = str(payload.get("Control Mode", ""))
                                 
-                                # Update motor states dynamically if they exist
-                                if "motor_1" in machine["motors"]:
-                                    machine["motors"]["motor_1"]["state"] = status.get("Motor 1 State")
-                                if "motor_2" in machine["motors"]:
-                                    machine["motors"]["motor_2"]["state"] = status.get("Motor 2 State")
+                                # Process ONLY if Control Mode is "2"
+                                if control_mode == "2":
+                                    updated = True
+                                    
+                                    # Extract "Enabled"
+                                    if "Enabled" in payload:
+                                        machine["motors"]["enabled"] = int(payload["Enabled"])
+                                        
+                                    # Extract "Motor 1 State"
+                                    if "Motor 1 State" in payload and "motor_1" in machine["motors"]:
+                                        machine["motors"]["motor_1"]["state"] = int(payload["Motor 1 State"])
+                                        
+                                    # Extract "Motor 2 State"
+                                    if "Motor 2 State" in payload and "motor_2" in machine["motors"]:
+                                        machine["motors"]["motor_2"]["state"] = int(payload["Motor 2 State"])
+                                        
+                                # If Control Mode is "0" or "1", we pass (do nothing)
+                                elif control_mode in ["0", "1"]:
+                                    pass
 
-                            # 2. Update Inputs (Conveyors)
+                            # 2. Update Inputs (Conveyors) - Kept existing logic intact
                             if "input" in payload:
                                 inputs_status = payload["input"]
                                 for k in inputs_status.keys():
                                     input_data = inputs_status[k]
-                                    # Map MQTT key '2' to JSON key 'input_2'
                                     input_id = f"input_{k}"
                                     
                                     if input_id in machine["inputs"]:
-                                        # machine["inputs"][input_id]["status"] = input_data.get("Status")
                                         machine["inputs"][input_id]["rpm"] = input_data.get("rpm")
+                                        updated = True
 
     if updated:
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(sys_data, f, indent=4)
         socketio.emit('system-data-updated', sys_data)
         print(f"✅ Data updated and broadcasted for {m_id}")
+
 # ==========================================
 # MQTT SETUP
 # ==========================================
 def on_connect(client, userdata, flags, reason_code, properties):
     print("✅ Connected to MQTT Broker")
-    client.subscribe("+/+/+/+") # Subscribe to match Factory/Warehouse/Type/Machine
+    # Using # at the end allows matching dynamic subtopics like /motor_status
+    client.subscribe("+/+/+/+/#")
 
 def on_message(client, userdata, msg):
     topic = msg.topic
     try:
         payload = json.loads(msg.payload.decode('utf-8'))
         print(f"\n📥 [MQTT IN] Topic: {topic}")
-        # Uncomment below to print raw payloads in terminal
         # print(json.dumps(payload, indent=2)) 
         
         update_data_from_mqtt(topic, payload)

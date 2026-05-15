@@ -112,7 +112,7 @@
                                 },
                                 "input_2": {
                                     "name": "INPUT 2",
-                                    "rpm": 54,
+                                    "rpm": 44,
                                     "status": 0
                                 },
                                 "input_3": {
@@ -131,7 +131,7 @@
                                 "enabled": 1,
                                 "motor_1": {
                                     "name": "Motor 1",
-                                    "state": 0
+                                    "state": 1
                                 },
                                 "motor_2": {
                                     "name": "Motor 2",

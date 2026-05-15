@@ -8,13 +8,13 @@ import random
 # ==========================================
 BROKER_ADDRESS = "localhost"  # Change this if your broker is on a different IP
 BROKER_PORT = 1883
-PUBLISH_INTERVAL = 2          # Send data every 2 seconds
+PUBLISH_INTERVAL = 3          # Send data every 3 seconds
 
-# The topic based on the MQTT Explorer hierarchy in your image
-TOPIC = "Factory_22/Warehouse_1/Tank_Conveyor/Machine_2"
+# The base topic for the machine
+BASE_TOPIC = "Factory_22/Warehouse_1/Tank_Conveyor/Machine_2"
 
 # ==========================================
-# MQTT CALLBACKS (Updated for paho-mqtt v2.0+)
+# MQTT CALLBACKS
 # ==========================================
 def on_connect(client, userdata, flags, reason_code, properties):
     if reason_code == 0:
@@ -29,74 +29,102 @@ def on_disconnect(client, userdata, disconnect_flags, reason_code, properties):
 # MAIN EXECUTION
 # ==========================================
 def main():
-    # Initialize MQTT Client with explicit API version 2
     client = mqtt.Client(
         callback_api_version=mqtt.CallbackAPIVersion.VERSION2, 
-        client_id="Python_Simulator_Client"
+        client_id="Python_Simulator_Testcases"
     )
     client.username_pw_set(username="amt", password="amt123456")
 
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
 
-    # Connect to the broker
     try:
         client.connect(BROKER_ADDRESS, BROKER_PORT, 60)
     except ConnectionRefusedError:
         print(f"❌ Connection Refused: Ensure Mosquitto is running on {BROKER_ADDRESS}:{BROKER_PORT}")
         return
 
-    # Start the network loop in a background thread
     client.loop_start()
-    
-    print(f"📡 Starting to publish data to topic: {TOPIC}...\nPress Ctrl+C to stop.")
+    print(f"📡 Starting to publish test cases to: {BASE_TOPIC}/...\nPress Ctrl+C to stop.\n")
+
+    # Define our test cases based on your logic rules
+    test_cases = [
+        {
+            "name": "TEST 1: Mode 2 (SHOULD PASS - Motors ON)",
+            "Control Mode": "2",
+            "Enabled": "1",
+            "Motor 1 State": "0",
+            "Motor 2 State": "1"
+        },
+        {
+            "name": "TEST 2: Mode 0 (SHOULD BE IGNORED - Data won't update UI)",
+            "Control Mode": "2",
+            "Enabled": "1",
+            "Motor 1 State": "1",
+            "Motor 2 State": "0"
+        },
+        {
+            "name": "TEST 3: Mode 2 (SHOULD PASS - Motors OFF)",
+            "Control Mode": "2",
+            "Enabled": "1",
+            "Motor 1 State": "0",
+            "Motor 2 State": "0"
+        },
+        {
+            "name": "TEST 4: Mode 1 (SHOULD BE IGNORED - Data won't update UI)",
+            "Control Mode": "2",
+            "Enabled": "1",
+            "Motor 1 State": "1",
+            "Motor 2 State": "1"
+        },
+        {
+            "name": "TEST 5: Mode 1 (SHOULD BE IGNORED - Data won't update UI)",
+            "Control Mode": "2",
+            "Enabled": "1",
+            "Motor 1 State": "0",
+            "Motor 2 State": "0"
+        }
+    ]
+
+    test_index = 0
 
     try:
         while True:
-            # Generate current timestamp (Unix epoch time as string)
             current_timestamp = str(int(time.time()))
+            
+            # --- 1. PUBLISH MOTOR STATUS TEST CASE ---
+            current_test = test_cases[test_index]
+            print(f"🔄 Executing {current_test['name']}")
+            
+            motor_payload = {
+                "Timestamp": current_timestamp,
+                "Enabled": current_test["Enabled"],
+                "Control Mode": current_test["Control Mode"],
+                "Motor 1 State": current_test["Motor 1 State"],
+                "Motor 2 State": current_test["Motor 2 State"]
+            }
+            
+            motor_topic = f"{BASE_TOPIC}//motor_status"
+            client.publish(motor_topic, json.dumps(motor_payload))
+            print(f"Topic: {motor_topic}")
+            print(f"Payload: {json.dumps(motor_payload)}\n")
 
-            # Randomize motor states to see the dashboard UI update dynamically
-            is_enabled = int(random.choice([0, 1]))
-            motor_1_state = int(random.choice([0, 1]))
-            motor_2_state = int(random.choice([0, 1]))
 
-            # Construct the payload mimicking your exact JSON structure
-            payload = {
-                "system_info": {
-                    "Timestamp": current_timestamp,
-                    "Board ID": "1",
-                    "Msg send count": int(random.randint(50000, 60000)),
-                    "Msg send success count": int(random.randint(50000, 60000)),
-                    "Wifi connected": "1"
-                },
+            # --- 2. PUBLISH INPUT (CONVEYOR RPM) TEST CASE ---
+            # Keeping this so your inputs/conveyors still update on the UI!
+            input_payload = {
                 "input": {
                     "2": {
-                        "Timestamp": current_timestamp,
-                        "Status": int(random.choice([0, 1])),
-                        "ON Interval": int(random.randint(100, 600)),
-                        "OFF Interval": int(random.randint(30, 90)),
-                        "rpm": int(random.randint(30, 60))
+                        "rpm": random.randint(30, 60)
                     }
-                },
-                "motor_status": {
-                    "Timestamp": current_timestamp,
-                    "Enabled": is_enabled,
-                    "Control Mode": "2",
-                    "Motor 1 State": motor_1_state,
-                    "Motor 2 State": motor_2_state
                 }
             }
+            client.publish(BASE_TOPIC, json.dumps(input_payload))
 
-            # Convert dictionary to JSON string
-            json_payload = json.dumps(payload)
+            # Move to next test case
+            test_index = (test_index + 1) % len(test_cases)
 
-            # Publish the message
-            client.publish(TOPIC, json_payload)
-            print(f"[{time.strftime('%H:%M:%S')}] Published to {TOPIC}")
-            print(f"Payload: {json_payload}\n")
-
-            # Wait before sending the next message
+            # Wait before sending next test
             time.sleep(PUBLISH_INTERVAL)
 
     except KeyboardInterrupt:
