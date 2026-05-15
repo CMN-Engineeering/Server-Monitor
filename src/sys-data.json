@@ -58,13 +58,9 @@
             "storageUnits": [
                 {
                     "id": "Warehouse_1",
-                    "name": "Warehouse_1",
                     "machineUnits": [
                         {
-                            "id": "Machine_X",
-                            "name": "Machine_New",
-                            "type": "scsc",
-                            "ip": "192.168.1.100",
+                            "id": "Machine_1",
                             "inputs": {
                                 "input_1": {
                                     "name": "INPUT 1",
@@ -87,9 +83,52 @@
                                     "status": 0
                                 }
                             },
+                            "ip": "192.168.1.100",
                             "motors": {
                                 "control_mode": 0,
-                                "enabled": 0,
+                                "enabled": 1,
+                                "motor_1": {
+                                    "name": "Motor 1",
+                                    "state": 0
+                                },
+                                "motor_2": {
+                                    "name": "Motor 2",
+                                    "state": 0
+                                }
+                            },
+                            "name": "Machine_New",
+                            "type": "scsc"
+                        },
+                        {
+                            "id": "Machine_2",
+                            "name": "Machine_2",
+                            "type": "Tank_Conveyor",
+                            "ip": "192.168.1.100",
+                            "inputs": {
+                                "input_1": {
+                                    "name": "INPUT 1",
+                                    "rpm": 0,
+                                    "status": 0
+                                },
+                                "input_2": {
+                                    "name": "INPUT 2",
+                                    "rpm": 54,
+                                    "status": 0
+                                },
+                                "input_3": {
+                                    "name": "INPUT 3",
+                                    "rpm": 0,
+                                    "status": 0
+                                },
+                                "input_4": {
+                                    "name": "INPUT 4",
+                                    "rpm": 0,
+                                    "status": 0
+                                }
+                            },
+                            "motors": {
+                                "control_mode": 0,
+                                "enabled": 1,
                                 "motor_1": {
                                     "name": "Motor 1",
                                     "state": 0
@@ -100,7 +139,8 @@
                                 }
                             }
                         }
-                    ]
+                    ],
+                    "name": "Warehouse_1"
                 }
             ]
         }

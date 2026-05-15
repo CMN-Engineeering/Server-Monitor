@@ -145,9 +145,16 @@ function viewStorageDashboard() {
         const machine = item.machine;
         const mIdx = item.originalIdx;
         
+        // Cập nhật thẻ h3 hiển thị thêm IP và đổi text nút bấm
         html += `
-        <div class="machine-block" style="border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h3 style="margin-top:0; border-bottom: 1px solid #eee; padding-bottom:10px;">${machine.name}</h3>
+        <div class="machine-block" style="position: relative; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h3 style="margin-top:0; border-bottom: 1px solid #eee; padding-bottom:10px; padding-right: 120px;">
+                ${machine.name} <span style="font-size: 0.6em; color: gray; font-weight: normal;">(ID: ${machine.id} | IP: ${machine.ip || 'Trống'})</span>
+            </h3>
+            
+            <button class="mgmt-btn admin-only" style="position: absolute; top: 12px; right: 15px; background-color: #ffc107; color: black; padding: 5px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" onclick="editMachineDetails(${mIdx})">
+                Sửa ID / IP
+            </button>
             
             <h4 style="margin: 10px 0;">Inputs</h4>
             <div class="component-mini-grid" style="display:flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">`;
@@ -322,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==========================================
-// 9. QUẢN LÝ THÊM / XÓA (ADMIN ONLY)
+// 9. QUẢN LÝ THÊM / XÓA / SỬA (ADMIN ONLY)
 // ==========================================
 
 function checkAdminAccess() {
@@ -435,7 +442,6 @@ function addMachine() {
         return;
     }
 
-    // 1. Thu thập thông tin cơ bản
     const machineName = prompt("Nhập TÊN Máy mới (Name):", "Machine_New");
     if (!machineName || machineName.trim() === "") return;
 
@@ -445,14 +451,12 @@ function addMachine() {
     const machineType = prompt("Nhập loại máy (Type):", "scsc");
     const machineIp = prompt("Nhập địa chỉ IP máy:", "192.168.1.100");
 
-    // 2. Thu thập số lượng component
     const numInputsStr = prompt("Nhập số lượng Inputs cho máy này (VD: 4):", "4");
     const numInputs = parseInt(numInputsStr) || 0;
 
     const numMotorsStr = prompt("Nhập số lượng Motors cho máy này (VD: 2):", "2");
     const numMotors = parseInt(numMotorsStr) || 0;
 
-    // 3. Xây dựng object inputs
     let inputsObj = {};
     for (let i = 1; i <= numInputs; i++) {
         inputsObj[`input_${i}`] = {
@@ -462,7 +466,6 @@ function addMachine() {
         };
     }
 
-    // 4. Xây dựng object motors
     let motorsObj = {
         control_mode: 0,
         enabled: 0
@@ -477,7 +480,6 @@ function addMachine() {
     const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
     if (!storage.machineUnits) storage.machineUnits = [];
     
-    // 5. Khởi tạo và đẩy cấu trúc máy mới vào hệ thống
     storage.machineUnits.push({
         id: machineId.trim(),
         name: machineName.trim(),
@@ -508,5 +510,61 @@ function deleteMachine() {
         
         saveSystemData();
         loadMachines();
+    }
+}
+
+// Cập nhật hàm Edit ID cũ thành Edit ID & IP với validation
+window.editMachineDetails = function(machineIdx) {
+    if (!checkAdminAccess()) return;
+    
+    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
+    const machine = storage.machineUnits[machineIdx];
+    
+    // --- 1. XỬ LÝ SỬA ID ---
+    let newId = prompt(`Sửa ID cho máy "${machine.name}":\n(ID hiện tại: ${machine.id})`, machine.id);
+    if (newId === null) return; // Hủy thao tác
+    newId = newId.trim();
+
+    if (newId !== "" && newId !== machine.id) {
+        // Kiểm tra xem ID mới có bị trùng với máy NÀO KHÁC trong cùng kho không
+        const isDuplicate = storage.machineUnits.some((m, idx) => m.id === newId && idx !== machineIdx);
+        if (isDuplicate) {
+            alert(`Lỗi: ID "${newId}" đã được sử dụng bởi một máy khác trong kho này. Vui lòng chọn ID khác!`);
+            return; 
+        }
+    } else {
+        newId = machine.id; // Nếu để trống hoặc không đổi thì giữ nguyên
+    }
+
+    // --- 2. XỬ LÝ SỬA IP ---
+    let currentIp = machine.ip || "";
+    let newIp = prompt(`Sửa IP cho máy "${machine.name}":\n(IP hiện tại: ${currentIp})`, currentIp);
+    if (newIp === null) return; // Hủy thao tác
+    newIp = newIp.trim();
+
+    if (newIp !== "" && newIp !== currentIp) {
+        // Kiểm tra định dạng IPv4 chuẩn (VD: 192.168.1.1)
+        const ipv4Regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        
+        if (!ipv4Regex.test(newIp)) {
+            alert(`Lỗi: IP "${newIp}" không hợp lệ. Vui lòng nhập đúng định dạng IPv4 (Ví dụ: 192.168.1.100).`);
+            return;
+        }
+    } else {
+        newIp = currentIp; // Giữ nguyên nếu trống
+    }
+
+    // --- 3. LƯU THAY ĐỔI ---
+    if (newId !== machine.id || newIp !== currentIp) {
+        machine.id = newId;
+        machine.ip = newIp;
+        saveSystemData(); 
+        
+        alert(`Thành công!\nID: ${newId}\nIP: ${newIp}`);
+        saveSystemData();
+        loadMachines();
+        viewStorageDashboard(); // Render lại dashboard để thấy thay đổi
+    } else {
+        alert("Không có thay đổi nào được lưu.");
     }
 }

@@ -18,13 +18,12 @@ DATA_FILE = 'sys-data.json'
 # DATA PARSING AND BROADCASTING LOGIC
 # ==========================================
 def update_data_from_mqtt(topic, payload):
-    # test_pub.py publishes to: Factory_1/Warehouse_1/Tank_Conveyor/Machine_1
     parts = topic.split('/')
     if len(parts) < 4:
         return
-    f_id = parts[0]   # Factory_1
+    f_id = parts[0]   # Factory_22
     s_id = parts[1]   # Warehouse_1
-    m_id = parts[3]   # Machine_1
+    m_id = parts[3]   # Machine_2
 
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
@@ -33,64 +32,44 @@ def update_data_from_mqtt(topic, payload):
         return
 
     updated = False
-
-    # Traverse JSON structure to find the matching Machine
+    
     for factory in sys_data.get('factories', []):
         if factory['id'] == f_id:
-            print(f"Found factory with ID: {f_id}")
             for storage in factory.get('storageUnits', []):
                 if storage['id'] == s_id:
-                    print(f"Found storage with ID: {s_id}")
                     for machine in storage.get('machineUnits', []):
                         if machine['id'] == m_id:
-                            print(f"Found machine with ID: {m_id}")
-                            # 1. Update Motors based on 'motor_status'
-                            if "motor_status" in payload:
-                                print(f"Found motor status")
+                            updated = True
+                            
+                            # 1. Update Motors
+                            if 'motor_status' in payload:
                                 status = payload["motor_status"]
-                                print("Motor Status: ", status)
-                                is_enabled = status.get("Enabled")
-                                control_mode = status.get("Control Mode")
-                                motor_1_state = status.get("Motor 1 State")
-                                motor_2_state = status.get("Motor 2 State")
-                                print(f"Motor Enabled : ", is_enabled)
-                                print(f"Control Mode : ", control_mode)
-                                print(f"Motor 1 state : ", motor_1_state)
-                                print(f"Motor 2 state : ", motor_2_state)
-                                machine["motors"]["enabled"] = is_enabled
-                                machine["motors"]["motor_1"]["state"] = motor_1_state
-                                machine["motors"]["motor_2"]["state"] = motor_2_state                                
+                                # Note: Ensure types match what script.js expects (0/1 or True/False)
+                                machine["motors"]["enabled"] = status.get("Enabled")
                                 
-                                
-                                
-                                # if "motors" in machine and len(machine["motors"]) >= 2:
+                                # Update motor states dynamically if they exist
+                                if "motor_1" in machine["motors"]:
+                                    machine["motors"]["motor_1"]["state"] = status.get("Motor 1 State")
+                                if "motor_2" in machine["motors"]:
+                                    machine["motors"]["motor_2"]["state"] = status.get("Motor 2 State")
 
-                            # 2. Update Inputs (Conveyors/Sensors) based on 'input'
+                            # 2. Update Inputs (Conveyors)
                             if "input" in payload:
-                                print(f"Found input status")
                                 inputs_status = payload["input"]
-                                print("input: ", inputs_status)
-                                # test_pub.py sends "2" as the input key
                                 for k in inputs_status.keys():
-                                    motor_status = inputs_status[k]
-                                    input_status = motor_status["Status"]
-                                    on_interval = motor_status["ON Interval"]
-                                    off_interval = motor_status["OFF Interval"]
-                                    rpm = motor_status["rpm"]
-                                    print(f"+++ Input {k} status:")
-                                    print("Status : ", input_status)
-                                    print("ON Interval : ", on_interval)
-                                    print("OFF Interval : ", off_interval)
-                                    print("RPM : ", rpm)
+                                    input_data = inputs_status[k]
+                                    # Map MQTT key '2' to JSON key 'input_2'
                                     input_id = f"input_{k}"
-                                    print("Input ID : ", input_id)
-                                    # machine["inputs"][input_id]["status"] = input_status
-                                    machine["inputs"][input_id]["rpm"] = rpm
                                     
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(sys_data, f, indent=4)
-    socketio.emit('system-data-updated', sys_data)
-    print("📤 Sent realtime update to web clients")
+                                    if input_id in machine["inputs"]:
+                                        # machine["inputs"][input_id]["status"] = input_data.get("Status")
+                                        machine["inputs"][input_id]["rpm"] = input_data.get("rpm")
+
+    if updated:
+        with open(DATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump(sys_data, f, indent=4)
+        socketio.emit('system-data-updated', sys_data)
+        print(f"✅ Data updated and broadcasted for {m_id}")
 # ==========================================
 # MQTT SETUP
 # ==========================================

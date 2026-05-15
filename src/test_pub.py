@@ -11,7 +11,7 @@ BROKER_PORT = 1883
 PUBLISH_INTERVAL = 2          # Send data every 2 seconds
 
 # The topic based on the MQTT Explorer hierarchy in your image
-TOPIC = "Factory_1/Warehouse_1/Tank_Conveyor/Machine_1"
+TOPIC = "Factory_22/Warehouse_1/Tank_Conveyor/Machine_2"
 
 # ==========================================
 # MQTT CALLBACKS (Updated for paho-mqtt v2.0+)
