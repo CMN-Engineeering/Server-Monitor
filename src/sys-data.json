@@ -9,28 +9,6 @@
                     "machineUnits": [
                         {
                             "id": "Machine_1",
-                            "inputs": {
-                                "input_1": {
-                                    "name": "INPUT 1",
-                                    "rpm": 0,
-                                    "status": 1
-                                },
-                                "input_2": {
-                                    "name": "INPUT 2",
-                                    "rpm": 53,
-                                    "status": 1
-                                },
-                                "input_3": {
-                                    "name": "INPUT 3",
-                                    "rpm": 0,
-                                    "status": 0
-                                },
-                                "input_4": {
-                                    "name": "INPUT 4",
-                                    "rpm": 0,
-                                    "status": 0
-                                }
-                            },
                             "ip": "192.168.1.100",
                             "motors": {
                                 "control_mode": 0,
@@ -45,6 +23,28 @@
                                 }
                             },
                             "name": "Machine_1",
+                            "outputs": {
+                                "output_1": {
+                                    "name": "OUTPUT 1",
+                                    "rpm": 0,
+                                    "status": 1
+                                },
+                                "output_2": {
+                                    "name": "OUTPUT 2",
+                                    "rpm": 53,
+                                    "status": 1
+                                },
+                                "output_3": {
+                                    "name": "OUTPUT 3",
+                                    "rpm": 0,
+                                    "status": 0
+                                },
+                                "output_4": {
+                                    "name": "OUTPUT 4",
+                                    "rpm": 0,
+                                    "status": 0
+                                }
+                            },
                             "type": "scsc"
                         }
                     ],
@@ -60,69 +60,7 @@
                     "id": "Warehouse_1",
                     "machineUnits": [
                         {
-                            "id": "Machine_1",
-                            "inputs": {
-                                "input_1": {
-                                    "name": "INPUT 1",
-                                    "rpm": 0,
-                                    "status": 1
-                                },
-                                "input_2": {
-                                    "name": "INPUT 2",
-                                    "rpm": 0,
-                                    "status": 0
-                                },
-                                "input_3": {
-                                    "name": "INPUT 3",
-                                    "rpm": 0,
-                                    "status": 0
-                                },
-                                "input_4": {
-                                    "name": "INPUT 4",
-                                    "rpm": 0,
-                                    "status": 0
-                                }
-                            },
-                            "ip": "192.168.1.100",
-                            "motors": {
-                                "control_mode": 0,
-                                "enabled": 1,
-                                "motor_1": {
-                                    "name": "Motor 1",
-                                    "state": 0
-                                },
-                                "motor_2": {
-                                    "name": "Motor 2",
-                                    "state": 0
-                                }
-                            },
-                            "name": "Machine_New",
-                            "type": "scsc"
-                        },
-                        {
                             "id": "Machine_2",
-                            "inputs": {
-                                "input_1": {
-                                    "name": "INPUT 1",
-                                    "rpm": 0,
-                                    "status": 1
-                                },
-                                "input_2": {
-                                    "name": "INPUT 2",
-                                    "rpm": 46,
-                                    "status": 1
-                                },
-                                "input_3": {
-                                    "name": "INPUT 3",
-                                    "rpm": 0,
-                                    "status": 1
-                                },
-                                "input_4": {
-                                    "name": "INPUT 4",
-                                    "rpm": 0,
-                                    "status": 1
-                                }
-                            },
                             "ip": "192.168.1.100",
                             "motors": {
                                 "control_mode": 0,
@@ -137,6 +75,68 @@
                                 }
                             },
                             "name": "Machine_2",
+                            "outputs": {
+                                "output_1": {
+                                    "name": "OUTPUT 1",
+                                    "rpm": 0,
+                                    "status": 1
+                                },
+                                "output_2": {
+                                    "name": "OUTPUT 2",
+                                    "rpm": 46,
+                                    "status": 0
+                                },
+                                "output_3": {
+                                    "name": "OUTPUT 3",
+                                    "rpm": 0,
+                                    "status": 1
+                                },
+                                "output_4": {
+                                    "name": "OUTPUT 4",
+                                    "rpm": 0,
+                                    "status": 1
+                                }
+                            },
+                            "type": "Tank_Conveyor"
+                        },
+                        {
+                            "id": "Machine_1",
+                            "ip": "192.168.1.100",
+                            "motors": {
+                                "control_mode": 0,
+                                "enabled": 0,
+                                "motor_1": {
+                                    "name": "Motor 1",
+                                    "state": 0
+                                },
+                                "motor_2": {
+                                    "name": "Motor 2",
+                                    "state": 0
+                                }
+                            },
+                            "name": "Machine_1",
+                            "outputs": {
+                                "output_1": {
+                                    "name": "OUTPUT 1",
+                                    "rpm": 0,
+                                    "status": 0
+                                },
+                                "output_2": {
+                                    "name": "OUTPUT 2",
+                                    "rpm": 0,
+                                    "status": 1
+                                },
+                                "output_3": {
+                                    "name": "OUTPUT 3",
+                                    "rpm": 0,
+                                    "status": 0
+                                },
+                                "output_4": {
+                                    "name": "OUTPUT 4",
+                                    "rpm": 0,
+                                    "status": 0
+                                }
+                            },
                             "type": "Tank_Conveyor"
                         }
                     ],

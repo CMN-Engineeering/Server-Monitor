@@ -110,7 +110,7 @@ def main():
             print(f"Payload: {json.dumps(motor_payload)}\n")
 
 
-            # --- 2. PUBLISH INPUT (CONVEYOR RPM) TEST CASE ---
+            # --- 2. PUBLISH OUTPUT (CONVEYOR RPM) TEST CASE ---
             # Keeping this so your inputs/conveyors still update on the UI!
             input_payload = {
                 "input": {

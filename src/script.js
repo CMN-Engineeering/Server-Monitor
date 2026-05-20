@@ -156,19 +156,19 @@ function viewStorageDashboard() {
                 Sửa ID / IP
             </button>
             
-            <h4 style="margin: 10px 0;">Inputs</h4>
+            <h4 style="margin: 10px 0;">Outputs</h4>
             <div class="component-mini-grid" style="display:flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">`;
         
-        if (machine.inputs) {
-            Object.entries(machine.inputs).forEach(([cKey, conv]) => {
+        if (machine.outputs) {
+            Object.entries(machine.outputs).forEach(([cKey, conv]) => {
                 console.log(`${mIdx}, '${cKey}'`);
                 const isRunning = parseInt(conv.status) === 1;
                 html += `
-                <div id="input-container-${mIdx}-${cKey}" class="conv-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isRunning ? '#d4edda' : '#f8d7da'}; transition: background 0.3s;">
+                <div id="output-container-${mIdx}-${cKey}" class="conv-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isRunning ? '#d4edda' : '#f8d7da'}; transition: background 0.3s;">
                     <strong style="display:block; margin-bottom:5px;">${conv.name || cKey}</strong>
-                    <p id="input-status-${mIdx}-${cKey}" style="margin:5px 0;">Trạng thái: ${isRunning ? '🟢 Đang chạy' : '🔴 Dừng'}</p>
-                    <p style="margin:5px 0;">Tốc độ: <span id="input-rpm-${mIdx}-${cKey}" style="font-weight:bold;">${conv.rpm || 0}</span> RPM</p>
-                    <button id="input-btn-${mIdx}-${cKey}" style="width:100%; background:${isRunning ? '#dc3545' : '#28a745'}; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="togglecomponent(${mIdx}, '${cKey}')">
+                    <p id="output-status-${mIdx}-${cKey}" style="margin:5px 0;">Trạng thái: ${isRunning ? '🟢 Đang chạy' : '🔴 Dừng'}</p>
+                    <p style="margin:5px 0;">Tốc độ: <span id="output-rpm-${mIdx}-${cKey}" style="font-weight:bold;">${conv.rpm || 0}</span> RPM</p>
+                    <button id="output-btn-${mIdx}-${cKey}" style="width:100%; background:${isRunning ? '#dc3545' : '#28a745'}; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="togglecomponent(${mIdx}, '${cKey}')">
                         ${isRunning ? 'Tắt' : 'Bật'}
                     </button>
                 </div>`;
@@ -223,14 +223,14 @@ function updateDashboardData() {
     
     const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
     storage.machineUnits.forEach((machine, mIdx) => {
-        // Sync Inputs
-        if (machine.inputs) {
-            Object.entries(machine.inputs).forEach(([cKey, conv]) => {
+        // Sync Outputs
+        if (machine.outputs) {
+            Object.entries(machine.outputs).forEach(([cKey, conv]) => {
                 const isRunning = parseInt(conv.status) === 1;
-                const container = document.getElementById(`input-container-${mIdx}-${cKey}`);
-                const statusEl = document.getElementById(`input-status-${mIdx}-${cKey}`);
-                const rpmEl = document.getElementById(`input-rpm-${mIdx}-${cKey}`);
-                const btnEl = document.getElementById(`input-btn-${mIdx}-${cKey}`);
+                const container = document.getElementById(`output-container-${mIdx}-${cKey}`);
+                const statusEl = document.getElementById(`output-status-${mIdx}-${cKey}`);
+                const rpmEl = document.getElementById(`output-rpm-${mIdx}-${cKey}`);
+                const btnEl = document.getElementById(`output-btn-${mIdx}-${cKey}`);
 
                 if (container && statusEl && rpmEl && btnEl) {
                     container.style.background = isRunning ? '#d4edda' : '#f8d7da';
@@ -283,9 +283,9 @@ window.togglecomponent = function(machineIdx, convKey) {
     const storage_id = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].id;
     const machine_type = machine.type;
     const machine_id = machine.id;
-    const component = machine.inputs[convKey];
+    const component = machine.outputs[convKey];
     component.status = parseInt(component.status) === 1 ? 0 : 1;
-    fetch(`/toggleInputState?factory_id=${factory_id}&storage_id=${storage_id}&machine_id=${machine_id}&machine_type=${machine_type}&input_id=${convKey}&input_state=${component.status}`)
+    fetch(`/toggleOutputState?factory_id=${factory_id}&storage_id=${storage_id}&machine_id=${machine_id}&machine_type=${machine_type}&output_id=${convKey}&output_state=${component.status}`)
     saveSystemData();
 }
 
@@ -462,16 +462,16 @@ function addMachine() {
     const machineType = prompt("Nhập loại máy (Type):", "scsc");
     const machineIp = prompt("Nhập địa chỉ IP máy:", "192.168.1.100");
 
-    const numInputsStr = prompt("Nhập số lượng Inputs cho máy này (VD: 4):", "4");
-    const numInputs = parseInt(numInputsStr) || 0;
+    const numOutputsStr = prompt("Nhập số lượng Outputs cho máy này (VD: 4):", "4");
+    const numOutputs = parseInt(numOutputsStr) || 0;
 
     const numMotorsStr = prompt("Nhập số lượng Motors cho máy này (VD: 2):", "2");
     const numMotors = parseInt(numMotorsStr) || 0;
 
-    let inputsObj = {};
-    for (let i = 1; i <= numInputs; i++) {
-        inputsObj[`input_${i}`] = {
-            name: `INPUT ${i}`,
+    let outputsObj = {};
+    for (let i = 1; i <= numOutputs; i++) {
+        outputsObj[`output_${i}`] = {
+            name: `OUTPUT ${i}`,
             rpm: 0,
             status: 0
         };
@@ -496,7 +496,7 @@ function addMachine() {
         name: machineName.trim(),
         type: machineType ? machineType.trim() : "",
         ip: machineIp ? machineIp.trim() : "",
-        inputs: inputsObj,
+        outputs: outputsObj,
         motors: motorsObj
     });
     

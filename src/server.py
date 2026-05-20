@@ -70,15 +70,15 @@ def update_data_from_mqtt(topic, payload):
                                 elif control_mode in ["0", "1"]:
                                     pass
 
-                            # 2. Update Inputs (Conveyors) - Kept existing logic intact
-                            if "input" in payload:
-                                inputs_status = payload["input"]
-                                for k in inputs_status.keys():
-                                    input_data = inputs_status[k]
-                                    input_id = f"input_{k}"
+                            # 2. Update Outputs (Conveyors) - Kept existing logic intact
+                            if "output" in payload:
+                                outputs_status = payload["output"]
+                                for k in outputs_status.keys():
+                                    output_data = outputs_status[k]
+                                    output_id = f"output_{k}"
                                     
-                                    if input_id in machine["inputs"]:
-                                        machine["inputs"][input_id]["rpm"] = input_data.get("rpm")
+                                    if output_id in machine["outputs"]:
+                                        machine["outputs"][output_id]["rpm"] = output_data.get("rpm")
                                         updated = True
 
     if updated:
@@ -137,25 +137,25 @@ def save_data():
     socketio.emit('system-data-updated', new_data)
     return jsonify({"success": True, "message": "Saved successfully"})
 
-@app.route('/toggleInputState')
-def toggle_input_state():
+@app.route('/toggleOutputState')
+def toggle_output_state():
     factory_id = request.args.get('factory_id')
     storage_id = request.args.get('storage_id')
     machine_id = request.args.get('machine_id')
     machine_type = request.args.get('machine_type')
-    input_id = request.args.get('input_id').split("_")[-1]
-    input_state = request.args.get('input_state', type=int)
+    output_id = request.args.get('output_id').split("_")[-1]
+    output_state = request.args.get('output_state', type=int)
     
     print(f"Factory ID: {factory_id}; Type : {type(factory_id)}")
     print(f"Storage ID: {storage_id}; Type : {type(storage_id)}")
     print(f"Machine ID: {machine_id}; Type : {type(machine_id)}")
     print(f"Machine Type: {machine_type}; Type : {type(machine_type)}")
-    print(f"Input ID: {input_id}; Type : {type(input_id)}")
-    print(f"Input Status: {input_state}; Type : {type(input_state)}")
+    print(f"Output ID: {output_id}; Type : {type(output_id)}")
+    print(f"Output Status: {output_state}; Type : {type(output_state)}")
     
     publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/command"
     
-    mqtt_client.publish(publish_topic, f"2,{input_id}" if input_state == 1 else  f"3,{input_id}")
+    mqtt_client.publish(publish_topic, f"2,{output_id}" if output_state == 1 else  f"3,{output_id}")
     
     return "OK"
 
