@@ -158,6 +158,30 @@ def toggle_input_state():
     mqtt_client.publish(publish_topic, f"2,{input_id}" if input_state == 1 else  f"3,{input_id}")
     
     return "OK"
+
+@app.route('/toggleMotorState')
+def toggle_motor_state():
+    factory_id = request.args.get('factory_id')
+    storage_id = request.args.get('storage_id')
+    machine_id = request.args.get('machine_id')
+    machine_type = request.args.get('machine_type')
+    motor_id = request.args.get('motor_id').split("_")[-1]
+    motor_state = request.args.get('motor_state', type=int)
+    
+    print(f"Factory ID: {factory_id}; Type : {type(factory_id)}")
+    print(f"Storage ID: {storage_id}; Type : {type(storage_id)}")
+    print(f"Machine ID: {machine_id}; Type : {type(machine_id)}")
+    print(f"Machine Type: {machine_type}; Type : {type(machine_type)}")
+    print(f"Motor ID: {motor_id}; Type : {type(motor_id)}")
+    print(f"Motor Status: {motor_state}; Type : {type(motor_state)}")
+    
+    publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/command"
+    
+    mqtt_client.publish(publish_topic, f"0,{motor_id}" if motor_state == 1 else  f"1,{motor_id}")
+    
+    return "OK"
+
+
 # ==========================================
 # SERVER STARTUP
 # ==========================================

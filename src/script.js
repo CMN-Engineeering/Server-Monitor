@@ -195,7 +195,7 @@ function viewStorageDashboard() {
             motorKeys.forEach(moKey => {
                 const motor = machine.motors[moKey];
                 const isOn = parseInt(motor.state) === 1;
-                
+                console.log(`mIdx : ${mIdx} - moKey : ${moKey}`)
                 html += `
                 <div id="motor-container-${mIdx}-${moKey}" class="motor-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isOn ? '#d4edda' : '#f8d7da'}; transition: background 0.3s;">
                     <strong style="display:block; margin-bottom:5px;">${motor.name || moKey.replace('_', ' ').toUpperCase()}</strong>
@@ -285,14 +285,19 @@ window.togglecomponent = function(machineIdx, convKey) {
     const machine_id = machine.id;
     const component = machine.inputs[convKey];
     component.status = parseInt(component.status) === 1 ? 0 : 1;
-    saveSystemData();
     fetch(`/toggleInputState?factory_id=${factory_id}&storage_id=${storage_id}&machine_id=${machine_id}&machine_type=${machine_type}&input_id=${convKey}&input_state=${component.status}`)
+    saveSystemData();
 }
 
 window.toggleMotorState = function(machineIdx, motorKey) {
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
+    const factory_id = systemData.factories[selectedFactoryIndex].id;
+    const storage_id = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].id;
+    const machine_type = machine.type;
+    const machine_id = machine.id;
     const motor = machine.motors[motorKey];
     motor.state = parseInt(motor.state) === 1 ? 0 : 1;
+    fetch(`/toggleMotorState?factory_id=${factory_id}&storage_id=${storage_id}&machine_id=${machine_id}&machine_type=${machine_type}&motor_id=${motorKey}&motor_state=${motor.state}`)
     saveSystemData();
 }
 
@@ -574,7 +579,10 @@ window.editMachineDetails = function(machineIdx) {
         alert("Không có thay đổi nào được lưu.");
     }
 }
-function getDatafromESP(){
-    return
+/*function getDatafromESP(){
+    console.log("Getting Data from ESP");
+    fetch('/status').then(r => r.json()).then(d => {
+        
+    })
 }
-setInterval(saveSystemData,2000)
+setInterval(getDatafromESP,2000)*/

@@ -65,7 +65,7 @@
                                 "input_1": {
                                     "name": "INPUT 1",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 },
                                 "input_2": {
                                     "name": "INPUT 2",
@@ -109,7 +109,7 @@
                                 },
                                 "input_2": {
                                     "name": "INPUT 2",
-                                    "rpm": 32,
+                                    "rpm": 46,
                                     "status": 1
                                 },
                                 "input_3": {
