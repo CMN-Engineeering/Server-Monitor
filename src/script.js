@@ -161,6 +161,7 @@ function viewStorageDashboard() {
         
         if (machine.inputs) {
             Object.entries(machine.inputs).forEach(([cKey, conv]) => {
+                console.log(`${mIdx}, '${cKey}'`);
                 const isRunning = parseInt(conv.status) === 1;
                 html += `
                 <div id="input-container-${mIdx}-${cKey}" class="conv-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isRunning ? '#d4edda' : '#f8d7da'}; transition: background 0.3s;">
@@ -278,9 +279,14 @@ function updateDashboardData() {
 // ==========================================
 window.togglecomponent = function(machineIdx, convKey) {
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
+    const factory_id = systemData.factories[selectedFactoryIndex].id;
+    const storage_id = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].id;
+    const machine_type = machine.type;
+    const machine_id = machine.id;
     const component = machine.inputs[convKey];
     component.status = parseInt(component.status) === 1 ? 0 : 1;
     saveSystemData();
+    fetch(`/toggleInputState?factory_id=${factory_id}&storage_id=${storage_id}&machine_id=${machine_id}&machine_type=${machine_type}&input_id=${convKey}&input_state=${component.status}`)
 }
 
 window.toggleMotorState = function(machineIdx, motorKey) {
@@ -568,3 +574,7 @@ window.editMachineDetails = function(machineIdx) {
         alert("Không có thay đổi nào được lưu.");
     }
 }
+function getDatafromESP(){
+    return
+}
+setInterval(saveSystemData,2000)

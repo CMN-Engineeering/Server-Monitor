@@ -101,31 +101,29 @@
                         },
                         {
                             "id": "Machine_2",
-                            "name": "Machine_2",
-                            "type": "Tank_Conveyor",
-                            "ip": "192.168.1.100",
                             "inputs": {
                                 "input_1": {
                                     "name": "INPUT 1",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 },
                                 "input_2": {
                                     "name": "INPUT 2",
-                                    "rpm": 44,
-                                    "status": 0
+                                    "rpm": 32,
+                                    "status": 1
                                 },
                                 "input_3": {
                                     "name": "INPUT 3",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 },
                                 "input_4": {
                                     "name": "INPUT 4",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 }
                             },
+                            "ip": "192.168.1.100",
                             "motors": {
                                 "control_mode": 0,
                                 "enabled": 1,
@@ -135,9 +133,11 @@
                                 },
                                 "motor_2": {
                                     "name": "Motor 2",
-                                    "state": 0
+                                    "state": 1
                                 }
-                            }
+                            },
+                            "name": "Machine_2",
+                            "type": "Tank_Conveyor"
                         }
                     ],
                     "name": "Warehouse_1"

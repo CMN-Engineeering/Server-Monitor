@@ -1,8 +1,11 @@
 import json
 import os
+import string
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
 import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
+
 
 app = Flask(__name__, static_folder='.', static_url_path='')
 # Allow Cross-Origin Resource Sharing for Socket.IO
@@ -134,6 +137,27 @@ def save_data():
     socketio.emit('system-data-updated', new_data)
     return jsonify({"success": True, "message": "Saved successfully"})
 
+@app.route('/toggleInputState')
+def toggle_input_state():
+    factory_id = request.args.get('factory_id')
+    storage_id = request.args.get('storage_id')
+    machine_id = request.args.get('machine_id')
+    machine_type = request.args.get('machine_type')
+    input_id = request.args.get('input_id').split("_")[-1]
+    input_state = request.args.get('input_state', type=int)
+    
+    print(f"Factory ID: {factory_id}; Type : {type(factory_id)}")
+    print(f"Storage ID: {storage_id}; Type : {type(storage_id)}")
+    print(f"Machine ID: {machine_id}; Type : {type(machine_id)}")
+    print(f"Machine Type: {machine_type}; Type : {type(machine_type)}")
+    print(f"Input ID: {input_id}; Type : {type(input_id)}")
+    print(f"Input Status: {input_state}; Type : {type(input_state)}")
+    
+    publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/command"
+    
+    mqtt_client.publish(publish_topic, f"2,{input_id}" if input_state == 1 else  f"3,{input_id}")
+    
+    return "OK"
 # ==========================================
 # SERVER STARTUP
 # ==========================================
