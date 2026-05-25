@@ -16,6 +16,10 @@ socketio = SocketIO(
 )
 
 DATA_FILE = 'sys-data.json'
+with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            sys_data = json.load(f)
+MESSAGE_COUNT = 0
+print(MESSAGE_COUNT)
 
 # ==========================================
 # DATA PARSING AND BROADCASTING LOGIC
@@ -143,7 +147,7 @@ def toggle_output_state():
     storage_id = request.args.get('storage_id')
     machine_id = request.args.get('machine_id')
     machine_type = request.args.get('machine_type')
-    output_id = request.args.get('output_id').split("_")[-1]
+    output_id = int(request.args.get('output_id').split("_")[-1]) - 1
     output_state = request.args.get('output_state', type=int)
     
     print(f"Factory ID: {factory_id}; Type : {type(factory_id)}")
@@ -153,9 +157,25 @@ def toggle_output_state():
     print(f"Output ID: {output_id}; Type : {type(output_id)}")
     print(f"Output Status: {output_state}; Type : {type(output_state)}")
     
-    publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/command"
+    publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/output/comand"
+    global MESSAGE_COUNT
     
-    mqtt_client.publish(publish_topic, f"2,{output_id}" if output_state == 1 else  f"3,{output_id}")
+    # 2. Build the payload dictionary and convert it to a valid JSON string
+    payload_dict = {
+        "id": MESSAGE_COUNT,
+        "cmd": output_state,
+        "param": [output_id]
+    }
+    MESSAGE_COUNT = MESSAGE_COUNT + 1 if MESSAGE_COUNT < 1000000000 else 0
+    payload = json.dumps(payload_dict)
+    # 3. Publish the message
+    mqtt_client.publish(publish_topic, payload)
+    
+    # 4. Increment the count, update global variable, and save back to the file
+    
+    
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(sys_data, f, indent=4)
     
     return "OK"
 
@@ -165,7 +185,8 @@ def toggle_motor_state():
     storage_id = request.args.get('storage_id')
     machine_id = request.args.get('machine_id')
     machine_type = request.args.get('machine_type')
-    motor_id = request.args.get('motor_id').split("_")[-1]
+    # Cast motor_id to int so it formats properly in the JSON array
+    motor_id = int(request.args.get('motor_id').split("_")[-1])
     motor_state = request.args.get('motor_state', type=int)
     
     print(f"Factory ID: {factory_id}; Type : {type(factory_id)}")
@@ -175,12 +196,23 @@ def toggle_motor_state():
     print(f"Motor ID: {motor_id}; Type : {type(motor_id)}")
     print(f"Motor Status: {motor_state}; Type : {type(motor_state)}")
     
-    publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/command"
+    # 1. Read the latest data and message_count from the JSON file
     
-    mqtt_client.publish(publish_topic, f"0,{motor_id}" if motor_state == 1 else  f"1,{motor_id}")
+    publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/output/comand"
+    
+    # 2. Build the payload dictionary and convert it to a valid JSON string
+    global MESSAGE_COUNT
+    payload_dict = {
+        "id": MESSAGE_COUNT,
+        "cmd": motor_state,
+        "param": [motor_id, 0]
+    }
+    payload = json.dumps(payload_dict)
+    MESSAGE_COUNT = MESSAGE_COUNT + 1 if MESSAGE_COUNT < 1000000000 else 0
+    # 3. Publish the message
+    mqtt_client.publish(publish_topic, payload)
     
     return "OK"
-
 
 # ==========================================
 # SERVER STARTUP
