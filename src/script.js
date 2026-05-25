@@ -152,6 +152,9 @@ function viewStorageDashboard() {
                 ${machine.name} <span style="font-size: 0.6em; color: gray; font-weight: normal;">(ID: ${machine.id} | IP: ${machine.ip || 'Trống'})</span>
             </h3>
             
+            <button class="mgmt-btn" style="position: absolute; top: 12px; right: 130px; background-color: #ffc107; color: black; padding: 5px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" onclick="openMachineControl('${machine.ip}')">
+                OPEN MACHINE CONTROL
+            </button>
             <button class="mgmt-btn admin-only" style="position: absolute; top: 12px; right: 15px; background-color: #ffc107; color: black; padding: 5px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" onclick="editMachineDetails(${mIdx})">
                 Sửa ID / IP
             </button>
@@ -273,7 +276,25 @@ function updateDashboardData() {
         }
     });
 }
+function openMachineControl(machine_ip) {
+    console.log("Opening control for IP:", machine_ip);
+    
+    // 1. Check if the IP is empty or undefined
+    if (!machine_ip || machine_ip.trim() === "") {
+        alert("Máy này chưa được cấu hình địa chỉ IP (IP đang trống)!");
+        return;
+    }
 
+    let url = machine_ip.trim();
+
+    // 2. Add http:// if the protocol is missing so the browser routes it externally
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'http://' + url;
+    }
+
+    // 3. Open in a new tab/window using '_blank'
+    window.open(url, '_blank');
+}
 // ==========================================
 // 7. CÁC HÀM TƯƠNG TÁC (COMMANDS)
 // ==========================================
