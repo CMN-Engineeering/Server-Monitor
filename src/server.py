@@ -5,14 +5,13 @@ from flask import Flask, request, jsonify
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 
-
 app = Flask(__name__, static_folder='.', static_url_path='')
 
 DATA_FILE = 'sys-data.json'
 with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            sys_data = json.load(f)
+    sys_data = json.load(f)
 MESSAGE_COUNT = 0
-print(MESSAGE_COUNT)
+print(f"Initial Message Count: {MESSAGE_COUNT}")
 
 # ==========================================
 # DATA PARSING AND BROADCASTING LOGIC
@@ -24,8 +23,7 @@ def update_data_from_mqtt(topic, payload):
     
     f_id = parts[0]   # Factory_id
     s_id = parts[1]   # Warehouse_id
-    # parts[2] is Tank_Conveyor
-    m_id = parts[3]   # Machine_id (Make sure your topic is .../Tank_Conveyor/Machine_ID/motor_status)
+    m_id = parts[3]   # Machine_id
 
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
@@ -44,30 +42,20 @@ def update_data_from_mqtt(topic, payload):
                             
                             # 1. Update Motors based on payload
                             if "motor_status" in topic or "Control Mode" in payload:
-                                # Safely get the Control Mode as a string
                                 control_mode = str(payload.get("Control Mode", ""))
                                 
-                                # Process ONLY if Control Mode is "2"
                                 if control_mode == "2":
                                     updated = True
-                                    
-                                    # Extract "Enabled"
                                     if "Enabled" in payload:
                                         machine["motors"]["enabled"] = int(payload["Enabled"])
-                                        
-                                    # Extract "Motor 1 State"
                                     if "Motor 1 State" in payload and "motor_1" in machine["motors"]:
                                         machine["motors"]["motor_1"]["state"] = int(payload["Motor 1 State"])
-                                        
-                                    # Extract "Motor 2 State"
                                     if "Motor 2 State" in payload and "motor_2" in machine["motors"]:
                                         machine["motors"]["motor_2"]["state"] = int(payload["Motor 2 State"])
-                                        
-                                # If Control Mode is "0" or "1", we pass (do nothing)
                                 elif control_mode in ["0", "1"]:
                                     pass
 
-                            # 2. Update Outputs (Conveyors) - Kept existing logic intact
+                            # 2. Update Outputs (Conveyors) 
                             if "output" in payload:
                                 outputs_status = payload["output"]
                                 for k in outputs_status.keys():
@@ -75,7 +63,10 @@ def update_data_from_mqtt(topic, payload):
                                     output_id = f"output_{k}"
                                     
                                     if output_id in machine["outputs"]:
-                                        machine["outputs"][output_id]["rpm"] = output_data.get("rpm")
+                                        if "rpm" in output_data:
+                                            machine["outputs"][output_id]["rpm"] = output_data.get("rpm")
+                                        if "status" in output_data:
+                                            machine["outputs"][output_id]["status"] = output_data.get("status")
                                         updated = True
 
     if updated:
@@ -88,7 +79,6 @@ def update_data_from_mqtt(topic, payload):
 # ==========================================
 def on_connect(client, userdata, flags, reason_code, properties):
     print("✅ Connected to MQTT Broker")
-    # Using # at the end allows matching dynamic subtopics like /motor_status
     client.subscribe("+/+/+/+/#")
 
 def on_message(client, userdata, msg):
@@ -96,8 +86,6 @@ def on_message(client, userdata, msg):
     try:
         payload = json.loads(msg.payload.decode('utf-8'))
         print(f"\n📥 [MQTT IN] Topic: {topic}")
-        # print(json.dumps(payload, indent=2)) 
-        
         update_data_from_mqtt(topic, payload)
     except Exception as e:
         print(f"❌ MQTT Parse Error: {e}")
@@ -129,7 +117,6 @@ def save_data():
     new_data = request.json
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(new_data, f, indent=4)
-    # Broadcast manual UI updates
     return jsonify({"success": True, "message": "Saved successfully"})
 
 @app.route('/toggleOutputState')
@@ -141,17 +128,9 @@ def toggle_output_state():
     output_id = int(request.args.get('output_id').split("_")[-1]) - 1
     output_state = request.args.get('output_state', type=int)
     
-    print(f"Factory ID: {factory_id}; Type : {type(factory_id)}")
-    print(f"Storage ID: {storage_id}; Type : {type(storage_id)}")
-    print(f"Machine ID: {machine_id}; Type : {type(machine_id)}")
-    print(f"Machine Type: {machine_type}; Type : {type(machine_type)}")
-    print(f"Output ID: {output_id}; Type : {type(output_id)}")
-    print(f"Output Status: {output_state}; Type : {type(output_state)}")
-    
     publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/output/command"
     global MESSAGE_COUNT
     
-    # 2. Build the payload dictionary and convert it to a valid JSON string
     payload_dict = {
         "id": MESSAGE_COUNT,
         "cmd": output_state,
@@ -160,13 +139,7 @@ def toggle_output_state():
     MESSAGE_COUNT = MESSAGE_COUNT + 1 if MESSAGE_COUNT < 1000000000 else 0
     payload = json.dumps(payload_dict)
     
-    # 3. Publish the message with QoS 1
     mqtt_client.publish(publish_topic, payload, qos=1)
-    
-    # 4. Increment the count, update global variable, and save back to the file
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(sys_data, f, indent=4)
-    
     return "OK"
 
 @app.route('/toggleMotorState')
@@ -175,35 +148,46 @@ def toggle_motor_state():
     storage_id = request.args.get('storage_id')
     machine_id = request.args.get('machine_id')
     machine_type = request.args.get('machine_type')
-    # Cast motor_id to int so it formats properly in the JSON array
     motor_id = int(request.args.get('motor_id').split("_")[-1])
     motor_state = request.args.get('motor_state', type=int)
     
-    print(f"Factory ID: {factory_id}; Type : {type(factory_id)}")
-    print(f"Storage ID: {storage_id}; Type : {type(storage_id)}")
-    print(f"Machine ID: {machine_id}; Type : {type(machine_id)}")
-    print(f"Machine Type: {machine_type}; Type : {type(machine_type)}")
-    print(f"Motor ID: {motor_id}; Type : {type(motor_id)}")
-    print(f"Motor Status: {motor_state}; Type : {type(motor_state)}")
-    
-    # 1. Read the latest data and message_count from the JSON file
-    
     publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/motor/command"
-    
-    # 2. Build the payload dictionary and convert it to a valid JSON string
     global MESSAGE_COUNT
+    
     payload_dict = {
         "id": MESSAGE_COUNT,
         "cmd": motor_state,
         "param": [motor_id, 0]
     }
-    payload = json.dumps(payload_dict)
     MESSAGE_COUNT = MESSAGE_COUNT + 1 if MESSAGE_COUNT < 1000000000 else 0
+    payload = json.dumps(payload_dict)
     
-    # 3. Publish the message with QoS 1
     mqtt_client.publish(publish_topic, payload, qos=1)
-    
     return "OK"
+
+@app.route('/toggleMotorEnable')
+def toggle_motor_enable():
+    factory_id = request.args.get('factory_id')
+    storage_id = request.args.get('storage_id')
+    machine_id = request.args.get('machine_id')
+    machine_type = request.args.get('machine_type')
+    enable_state = request.args.get('enable_state', type=int)
+    
+    publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/motor/command"
+    global MESSAGE_COUNT
+    
+    # 2 generally acts as the enable/disable mode configuration trigger. Adjust if your MCU expects a different structure.
+    payload_dict = {
+        "id": MESSAGE_COUNT,
+        "cmd": 2, 
+        "param": [enable_state]
+    }
+    MESSAGE_COUNT = MESSAGE_COUNT + 1 if MESSAGE_COUNT < 1000000000 else 0
+    payload = json.dumps(payload_dict)
+    
+    mqtt_client.publish(publish_topic, payload, qos=1)
+    return "OK"
+
 # ==========================================
 # SERVER STARTUP
 # ==========================================
