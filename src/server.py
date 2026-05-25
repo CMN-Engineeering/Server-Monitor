@@ -2,18 +2,11 @@ import json
 import os
 import string
 from flask import Flask, request, jsonify
-from flask_socketio import SocketIO
 import paho.mqtt.client as mqtt
 import paho.mqtt.publish as publish
 
 
 app = Flask(__name__, static_folder='.', static_url_path='')
-# Allow Cross-Origin Resource Sharing for Socket.IO
-socketio = SocketIO(
-    app,
-    cors_allowed_origins="*",
-    async_mode="threading"
-)
 
 DATA_FILE = 'sys-data.json'
 with open(DATA_FILE, 'r', encoding='utf-8') as f:
@@ -88,7 +81,6 @@ def update_data_from_mqtt(topic, payload):
     if updated:
         with open(DATA_FILE, 'w', encoding='utf-8') as f:
             json.dump(sys_data, f, indent=4)
-        socketio.emit('system-data-updated', sys_data)
         print(f"✅ Data updated and broadcasted for {m_id}")
 
 # ==========================================
@@ -138,7 +130,6 @@ def save_data():
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(new_data, f, indent=4)
     # Broadcast manual UI updates
-    socketio.emit('system-data-updated', new_data)
     return jsonify({"success": True, "message": "Saved successfully"})
 
 @app.route('/toggleOutputState')
@@ -218,15 +209,4 @@ def toggle_motor_state():
 # ==========================================
 if __name__ == '__main__':
     print("🚀 Starting Server on port 3000...")
-    
-    # Configure arguments for Socket.IO
-    run_kwargs = {"host": "0.0.0.0", "port": 3000, "allow_unsafe_werkzeug": True}
-    
-    # Check for SSL Certs to mimic Node.js HTTPS environment
-    if os.path.exists('key.pem') and os.path.exists('cert.pem'):
-        run_kwargs["ssl_context"] = ('cert.pem', 'key.pem')
-        print("🔒 HTTPS Enabled")
-    else:
-        print("⚠️ SSL certs not found, falling back to HTTP")
-
-    socketio.run(app, **run_kwargs)
+    app.run(host="0.0.0.0", port=3000)

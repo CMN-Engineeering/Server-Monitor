@@ -342,19 +342,120 @@ window.toggleMotorEnable = function(machineIdx) {
 }
 
 // ==========================================
-// 8. KHỞI ĐỘNG VÀ SOCKET
+// 8. KHỞI ĐỘNG VÀ MQTT WEBSOCKET
 // ==========================================
-const socket = io();
-socket.on('system-data-updated', (updatedData) => {
-    systemData = updatedData;
-    updateDashboardData();
-});
+// Configuration for your MQTT Broker over WebSockets
+const MQTT_BROKER = "localhost"; // Change to your broker's IP if accessing from another device
+const MQTT_PORT = 9001;          // Must match the WebSocket port in mosquitto.conf
+const MQTT_USER = "amt";
+const MQTT_PASS = "amt123456";
+
+// Generate a random client ID for the browser
+const clientId = "web_client_" + Math.random().toString(16).substring(2, 10);
+const mqttClient = new Paho.Client(MQTT_BROKER, MQTT_PORT, clientId);
+
+mqttClient.onConnectionLost = (responseObject) => {
+    if (responseObject.errorCode !== 0) {
+        console.error("Mất kết nối MQTT:", responseObject.errorMessage);
+        // Optional: Implement automatic reconnect logic here
+        setTimeout(connectMQTT, 5000); 
+    }
+};
+
+mqttClient.onMessageArrived = (message) => {
+    const topic = message.destinationName;
+    try {
+        const payload = JSON.parse(message.payloadString);
+        parseMqttData(topic, payload);
+    } catch (e) {
+        console.error("Lỗi parse dữ liệu MQTT:", e);
+    }
+};
+
+function connectMQTT() {
+    console.log("Đang kết nối MQTT qua WebSockets...");
+    mqttClient.connect({
+        userName: MQTT_USER,
+        password: MQTT_PASS,
+        onSuccess: () => {
+            console.log("✅ Kết nối MQTT WebSocket thành công!");
+            // Subscribe to all machine updates
+            mqttClient.subscribe("+/+/+/+/#");
+        },
+        onFailure: (err) => {
+            console.error("❌ Kết nối MQTT thất bại:", err.errorMessage);
+            setTimeout(connectMQTT, 5000);
+        }
+    });
+}
+
+// Translate Python parsing logic into JS to update systemData locally
+function parseMqttData(topic, payload) {
+    if (!systemData || !systemData.factories) return;
+
+    const parts = topic.split('/');
+    if (parts.length < 4) return;
+
+    const f_id = parts[0];
+    const s_id = parts[1];
+    const m_id = parts[3];
+
+    let uiNeedsUpdate = false;
+
+    systemData.factories.forEach(factory => {
+        if (factory.id !== f_id) return;
+        factory.storageUnits.forEach(storage => {
+            if (storage.id !== s_id) return;
+            storage.machineUnits.forEach(machine => {
+                if (machine.id !== m_id) return;
+
+                // 1. Update Motors
+                if (topic.includes("motor_status") || payload["Control Mode"] !== undefined) {
+                    const controlMode = String(payload["Control Mode"] || "");
+                    if (controlMode === "2") {
+                        uiNeedsUpdate = true;
+                        if (payload["Enabled"] !== undefined && machine.motors) {
+                            machine.motors.enabled = parseInt(payload["Enabled"]);
+                        }
+                        if (payload["Motor 1 State"] !== undefined && machine.motors && machine.motors.motor_1) {
+                            machine.motors.motor_1.state = parseInt(payload["Motor 1 State"]);
+                        }
+                        if (payload["Motor 2 State"] !== undefined && machine.motors && machine.motors.motor_2) {
+                            machine.motors.motor_2.state = parseInt(payload["Motor 2 State"]);
+                        }
+                    }
+                }
+
+                // 2. Update Outputs (Conveyors)
+                if (payload["output"]) {
+                    Object.keys(payload["output"]).forEach(k => {
+                        const outputData = payload["output"][k];
+                        const outputId = `output_${k}`;
+                        
+                        if (machine.outputs && machine.outputs[outputId]) {
+                            if (outputData.rpm !== undefined) {
+                                machine.outputs[outputId].rpm = outputData.rpm;
+                                uiNeedsUpdate = true;
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    });
+
+    // If data changed for the currently viewed dashboard, update the UI instantly
+    if (uiNeedsUpdate) {
+        updateDashboardData();
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const savedSession = localStorage.getItem('monitorSession');
     if (savedSession) {
         currentUser = JSON.parse(savedSession);
         startApp();
+        connectMQTT(); // Connect to MQTT when app starts
     } else {
         document.getElementById('login-screen').style.display = 'flex';
     }

@@ -119,12 +119,12 @@
                                 "output_1": {
                                     "name": "OUTPUT 1",
                                     "rpm": 0,
-                                    "status": 1
+                                    "status": 0
                                 },
                                 "output_2": {
                                     "name": "OUTPUT 2",
                                     "rpm": 0,
-                                    "status": 1
+                                    "status": 0
                                 },
                                 "output_3": {
                                     "name": "OUTPUT 3",
@@ -134,7 +134,7 @@
                                 "output_4": {
                                     "name": "OUTPUT 4",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 }
                             },
                             "type": "Tank_Conveyor"
