@@ -157,7 +157,7 @@ def toggle_output_state():
     print(f"Output ID: {output_id}; Type : {type(output_id)}")
     print(f"Output Status: {output_state}; Type : {type(output_state)}")
     
-    publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/output/comand"
+    publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/output/command"
     global MESSAGE_COUNT
     
     # 2. Build the payload dictionary and convert it to a valid JSON string
@@ -168,12 +168,11 @@ def toggle_output_state():
     }
     MESSAGE_COUNT = MESSAGE_COUNT + 1 if MESSAGE_COUNT < 1000000000 else 0
     payload = json.dumps(payload_dict)
-    # 3. Publish the message
-    mqtt_client.publish(publish_topic, payload)
+    
+    # 3. Publish the message with QoS 1
+    mqtt_client.publish(publish_topic, payload, qos=1)
     
     # 4. Increment the count, update global variable, and save back to the file
-    
-    
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(sys_data, f, indent=4)
     
@@ -198,7 +197,7 @@ def toggle_motor_state():
     
     # 1. Read the latest data and message_count from the JSON file
     
-    publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/output/comand"
+    publish_topic = f"{factory_id}/{storage_id}/{machine_type}/{machine_id}/motor/command"
     
     # 2. Build the payload dictionary and convert it to a valid JSON string
     global MESSAGE_COUNT
@@ -209,11 +208,11 @@ def toggle_motor_state():
     }
     payload = json.dumps(payload_dict)
     MESSAGE_COUNT = MESSAGE_COUNT + 1 if MESSAGE_COUNT < 1000000000 else 0
-    # 3. Publish the message
-    mqtt_client.publish(publish_topic, payload)
+    
+    # 3. Publish the message with QoS 1
+    mqtt_client.publish(publish_topic, payload, qos=1)
     
     return "OK"
-
 # ==========================================
 # SERVER STARTUP
 # ==========================================
