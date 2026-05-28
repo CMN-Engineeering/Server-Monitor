@@ -1,80 +1,18 @@
 {
     "factories": [
         {
-            "id": "Factory_1",
-            "name": "Factory_1",
-            "storageUnits": [
-                {
-                    "id": "Warehouse_1",
-                    "machineUnits": [
-                        {
-                            "id": "Machine_1",
-                            "ip": "192.168.1.100",
-                            "motors": {
-                                "control_mode": 0,
-                                "enabled": 1,
-                                "motor_1": {
-                                    "name": "Motor 1",
-                                    "state": 0
-                                },
-                                "motor_2": {
-                                    "name": "Motor 2",
-                                    "state": 0
-                                }
-                            },
-                            "name": "Machine_1",
-                            "outputs": {
-                                "output_1": {
-                                    "name": "OUTPUT 1",
-                                    "rpm": 0,
-                                    "status": 1
-                                },
-                                "output_2": {
-                                    "name": "OUTPUT 2",
-                                    "rpm": 53,
-                                    "status": 1
-                                },
-                                "output_3": {
-                                    "name": "OUTPUT 3",
-                                    "rpm": 0,
-                                    "status": 0
-                                },
-                                "output_4": {
-                                    "name": "OUTPUT 4",
-                                    "rpm": 0,
-                                    "status": 0
-                                }
-                            },
-                            "type": "scsc"
-                        }
-                    ],
-                    "name": "Warehouse_1"
-                }
-            ]
-        },
-        {
             "id": "Factory_22",
             "name": "Factory_22",
             "storageUnits": [
                 {
                     "id": "Warehouse_1",
+                    "name": "Warehouse_1",
                     "machineUnits": [
                         {
                             "id": "Machine_2",
-                            "ip": "192.168.1.168",
-                            "motors": {
-                                "control_mode": 0,
-                                "enabled": 1,
-                                "motor_1": {
-                                    "name": "Motor 1",
-                                    "state": 0
-                                },
-                                "motor_2": {
-                                    "name": "Motor 2",
-                                    "state": 1
-                                }
-                            },
                             "name": "Machine_2",
+                            "type": "Tank_Conveyor",
+                            "ip": "192.168.1.100",
                             "outputs": {
                                 "output_1": {
                                     "name": "OUTPUT 1",
@@ -83,8 +21,8 @@
                                 },
                                 "output_2": {
                                     "name": "OUTPUT 2",
-                                    "rpm": 46,
-                                    "status": 0
+                                    "rpm": 0,
+                                    "status": 1
                                 },
                                 "output_3": {
                                     "name": "OUTPUT 3",
@@ -97,53 +35,22 @@
                                     "status": 1
                                 }
                             },
-                            "type": "Tank_Conveyor"
-                        },
-                        {
-                            "id": "Machine_1",
-                            "ip": "192.168.1.100",
                             "motors": {
                                 "control_mode": 0,
                                 "enabled": 1,
                                 "motor_1": {
                                     "name": "Motor 1",
-                                    "state": 0
+                                    "state": 1
                                 },
                                 "motor_2": {
                                     "name": "Motor 2",
                                     "state": 0
                                 }
-                            },
-                            "name": "Machine_1",
-                            "outputs": {
-                                "output_1": {
-                                    "name": "OUTPUT 1",
-                                    "rpm": 0,
-                                    "status": 1
-                                },
-                                "output_2": {
-                                    "name": "OUTPUT 2",
-                                    "rpm": 0,
-                                    "status": 1
-                                },
-                                "output_3": {
-                                    "name": "OUTPUT 3",
-                                    "rpm": 0,
-                                    "status": 0
-                                },
-                                "output_4": {
-                                    "name": "OUTPUT 4",
-                                    "rpm": 0,
-                                    "status": 0
-                                }
-                            },
-                            "type": "Tank_Conveyor"
+                            }
                         }
-                    ],
-                    "name": "Warehouse_1"
+                    ]
                 }
             ]
         }
-    ],
-    "message_count": 1
+    ]
 }

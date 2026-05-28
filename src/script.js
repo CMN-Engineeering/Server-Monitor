@@ -55,23 +55,48 @@ function logout() {
 // ==========================================
 // 3. TẢI VÀ LƯU DỮ LIỆU
 // ==========================================
+// Thay thế hàm loadSystemData hiện tại trong script.js
 async function loadSystemData() {
     try {
-        const response = await fetch('/api/load-data?_t=' + new Date().getTime());
+        // Fetch từ API thay vì file tĩnh
+        const response = await fetch('/api/load-data');
         if (!response.ok) throw new Error('Failed to load data');
+        
         systemData = await response.json();
+        
+        // Load lại danh sách nhà máy
         populateFactories();
+        
+        // Tự động load kho và máy nếu đã có dữ liệu đang chọn
+        if (selectedFactoryIndex !== null && selectedFactoryIndex !== "") {
+            loadStorages();
+        }
     } catch (error) {
-        console.error('Lỗi server:', error);
+        console.error('Lỗi khi tải dữ liệu:', error);
     }
 }
 
-function saveSystemData() {
-    fetch('/api/save-data', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(systemData)
-    }).catch(err => console.error('Lỗi khi lưu dữ liệu:', err));
+// Thay thế hàm saveSystemData hiện tại trong script.js
+async function saveSystemData() {
+    try {
+        const response = await fetch('/api/save-data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(systemData)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to save data to server');
+        }
+        console.log('✅ Dữ liệu đã được lưu thành công vào sys-data.json');
+        
+    } catch (error) {
+        console.error('❌ Lỗi khi lưu dữ liệu:', error);
+        // Fallback: Lưu vào local storage nếu server lỗi
+        localStorage.setItem('monitorSystemData', JSON.stringify(systemData));
+    }
 }
 
 // ==========================================
@@ -342,19 +367,272 @@ window.toggleMotorEnable = function(machineIdx) {
 }
 
 // ==========================================
-// 8. KHỞI ĐỘNG VÀ SOCKET
+// 8. KHỞI ĐỘNG VÀ SOCKET / MQTT WEBSOCKET
 // ==========================================
-const socket = io();
-socket.on('system-data-updated', (updatedData) => {
-    systemData = updatedData;
-    updateDashboardData();
-});
+
+// Socket.IO connection (disabled - using MQTT WebSocket instead)
+// const socket = io();
+// socket.on('system-data-updated', (updatedData) => {
+//     systemData = updatedData;
+//     updateDashboardData();
+// });
+
+// MQTT WebSocket connection for real-time data updates
+let mqttClient;
+
+function initializeMQTTConnection() {
+    const clientId = 'monitor-client-' + Math.random().toString(36).substring(7);
+    const host = 'ws://localhost:9001/mqtt'; // Change to your MQTT broker address
+    
+    const options = {
+        keepalive: 60,
+        username: 'amt',
+        password: 'amt123456',
+        clientId: clientId,
+        protocolId: 'MQTT',
+        protocolVersion: 4,
+        clean: true,
+        reconnectPeriod: 1000,
+        connectTimeout: 30 * 1000,
+    };
+    
+    mqttClient = mqtt.connect(host, options);
+    
+    mqttClient.on('error', (err) => {
+        console.error('MQTT Error:', err);
+    });
+    
+    mqttClient.on('reconnect', () => {
+        console.log('MQTT Reconnecting...');
+    });
+    
+    mqttClient.on('connect', () => {
+        console.log('MQTT Connected:', clientId);
+        // Subscribe to system data topics
+        subscribeToDataTopics();
+    });
+    
+    // Handle incoming messages
+    mqttClient.on('message', (topic, message) => {
+        try {
+            const messageStr = message.toString();
+            console.log('MQTT Message from ' + topic + ':', messageStr);
+            handleMQTTMessage(topic, messageStr);
+        } catch (error) {
+            console.error('Error processing MQTT message:', error);
+        }
+    });
+}
+
+function generateTopicsFromData() {
+    const topics = [];
+    
+    // Kiểm tra xem systemData.factories có tồn tại và là một mảng không
+    if (!systemData || !Array.isArray(systemData.factories)) return topics;
+    
+    // Duyệt qua mảng các nhà máy
+    systemData.factories.forEach(factory => {
+        if (!Array.isArray(factory.storageUnits)) return;
+        
+        // Duyệt qua mảng các kho trong nhà máy
+        factory.storageUnits.forEach(storage => {
+            if (!Array.isArray(storage.machineUnits)) return;
+            
+            // Duyệt qua mảng các máy trong kho
+            storage.machineUnits.forEach(machine => {
+                // Đảm bảo machine type có giá trị, nếu trống thì để mặc định tránh lỗi undefined trên topic
+                const machineType = machine.type || "unknown_type";
+                
+                // Generate motor topics
+                topics.push(`${factory.id}/${storage.id}/${machineType}/${machine.id}//motor_status`);
+                
+                // Nếu sau này bạn cần subscribe riêng cho output, bạn có thể duyệt qua object machine.outputs:
+                // if (machine.outputs) {
+                //     Object.keys(machine.outputs).forEach(outputId => {
+                //         topics.push(`${factory.id}/${storage.id}/${machineType}/${machine.id}/${outputId}/status`);
+                //     });
+                // }
+            });
+        });
+    });
+    
+    return topics;
+}
+function subscribeToDataTopics() {
+    if (!mqttClient) return;
+    
+    // Generate topics from system data
+    const generatedTopics = generateTopicsFromData();
+    for(let topic of generatedTopics) {
+        console.log('Generated topic to subscribe:', topic);
+    }
+    
+    // Add wildcard topics for flexibility
+    const staticTopics = [
+        'system/data/update'
+    ];
+    
+    const allTopics = [...generatedTopics, ...staticTopics];
+    
+    allTopics.forEach(topic => {
+        mqttClient.subscribe(topic, { qos: 0 }, (err) => {
+            if (!err) {
+                console.log('Subscribed to topic:', topic);
+            } else {
+                console.error('Subscription error for topic ' + topic + ':', err);
+            }
+        });
+    });
+    
+    console.log('Total subscribed topics:', allTopics.length);
+}
+
+function handleMQTTMessage(topic, message) {
+    if (!systemData) return;
+    
+    try {
+        // Try parsing as JSON first
+        let data = message;
+        if (typeof message === 'string' && message.startsWith('{')) {
+            data = JSON.parse(message);
+        }
+        
+        // Parse topic and update corresponding data
+        const topicParts = topic.split('/');
+        
+        // Handle output status updates: factory/{id}/storage/{id}/machine/{id}/output/{id}/status
+        if (topic.includes('//motor_status')) {
+            const factoryId = topicParts[0];
+            const storageId = topicParts[1];
+            const machineId = topicParts[3];
+            
+            if (data && String(data["Control Mode"]) === "2") {
+                updateMotorStatusBatch(factoryId, storageId, machineId, data);
+                updateDashboardData(); // Cập nhật lại UI ngay lập tức
+                return; // Ngừng xử lý các logic bên dưới
+            }
+        }
+                
+        updateDashboardData();
+    } catch (error) {
+        console.error('Error handling MQTT message:', error);
+    }
+}
+
+function updateMotorStatusBatch(factoryId, storageId, machineId, data) {
+    if (!systemData || !systemData.factories) return;
+    
+    // Tìm Factory
+    const factory = systemData.factories.find(f => f.id === factoryId);
+    if (!factory) return;
+    
+    // Tìm Kho
+    const storage = factory.storageUnits.find(s => s.id === storageId);
+    if (!storage) return;
+    
+    // Tìm Máy
+    const machine = storage.machineUnits.find(m => m.id === machineId);
+    if (!machine) return;
+    
+    // Khởi tạo object motors nếu chưa có
+    if (!machine.motors) machine.motors = {};
+    
+    // 1. Cập nhật trạng thái "Enabled" (Kích hoạt / Vô hiệu hóa toàn bộ)
+    if (data["Enabled"] !== undefined) {
+        machine.motors.enabled = parseInt(data["Enabled"]);
+    }
+    
+    // 2. Cập nhật trạng thái Motor 1
+    if (data["Motor 1 State"] !== undefined) {
+        if (!machine.motors.motor_1) machine.motors.motor_1 = { name: "Motor 1", state: 0 };
+        machine.motors.motor_1.state = parseInt(data["Motor 1 State"]);
+    }
+    
+    // 3. Cập nhật trạng thái Motor 2
+    if (data["Motor 2 State"] !== undefined) {
+        if (!machine.motors.motor_2) machine.motors.motor_2 = { name: "Motor 2", state: 0 };
+        machine.motors.motor_2.state = parseInt(data["Motor 2 State"]);
+    }
+    
+    console.log(`✅ Đã cập nhật UI trực tiếp cho ${machineId} từ Broker!`);
+}
+
+function updateOutputData(factoryId, storageId, machineId, outputId, data) {
+    if (!systemData || !systemData.factories) return;
+    
+    const factory = systemData.factories.find(f => f.id === factoryId);
+    if (!factory) return;
+    
+    const storage = factory.storageUnits.find(s => s.id === storageId);
+    if (!storage) return;
+    
+    const machine = storage.machineUnits.find(m => m.id === machineId);
+    if (!machine || !machine.outputs) return;
+    
+    const output = machine.outputs[outputId];
+    if (output) {
+        if (typeof data === 'object') {
+            Object.assign(output, data);
+        } else {
+            output.status = parseInt(data);
+        }
+    }
+}
+
+function updateMotorData(factoryId, storageId, machineId, motorId, data) {
+    if (!systemData || !systemData.factories) return;
+    
+    const factory = systemData.factories.find(f => f.id === factoryId);
+    if (!factory) return;
+    
+    const storage = factory.storageUnits.find(s => s.id === storageId);
+    if (!storage) return;
+    
+    const machine = storage.machineUnits.find(m => m.id === machineId);
+    if (!machine || !machine.motors) return;
+    
+    const motor = machine.motors[motorId];
+    if (motor) {
+        if (typeof data === 'object') {
+            Object.assign(motor, data);
+        } else {
+            motor.state = parseInt(data);
+        }
+    }
+}
+
+function updateMachineAllData(machineData) {
+    if (!systemData || !systemData.factories) return;
+    
+    // Find and update machine data by comparing IDs
+    for (let factory of systemData.factories) {
+        for (let storage of factory.storageUnits) {
+            for (let i = 0; i < storage.machineUnits.length; i++) {
+                if (storage.machineUnits[i].id === machineData.id) {
+                    // Update outputs
+                    if (machineData.outputs) {
+                        Object.assign(storage.machineUnits[i].outputs, machineData.outputs);
+                    }
+                    // Update motors
+                    if (machineData.motors) {
+                        Object.assign(storage.machineUnits[i].motors, machineData.motors);
+                    }
+                    return;
+                }
+            }
+        }
+    }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     const savedSession = localStorage.getItem('monitorSession');
     if (savedSession) {
         currentUser = JSON.parse(savedSession);
         startApp();
+        // Initialize MQTT connection after app starts
+        setTimeout(() => {
+            initializeMQTTConnection();
+        }, 500);
     } else {
         document.getElementById('login-screen').style.display = 'flex';
     }
@@ -600,10 +878,3 @@ window.editMachineDetails = function(machineIdx) {
         alert("Không có thay đổi nào được lưu.");
     }
 }
-/*function getDatafromESP(){
-    console.log("Getting Data from ESP");
-    fetch('/status').then(r => r.json()).then(d => {
-        
-    })
-}
-setInterval(getDatafromESP,2000)*/
