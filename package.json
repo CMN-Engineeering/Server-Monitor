@@ -4,8 +4,8 @@
   "description": "Server Monitoring System with hierarchical management",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
   },
   "keywords": [
     "server",
