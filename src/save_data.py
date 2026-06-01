@@ -9,14 +9,14 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 
 # MQTT Configuration
 MQTT_BROKER = "localhost" # Replace with your MQTT broker IP/Hostname
-MQTT_PORT = 1883
+MQTT_PORT = 2248
 MQTT_TOPIC = "supervisory"
 
 # InfluxDB Configuration
-INFLUX_URL = "http://localhost:8086"
-INFLUX_TOKEN = "F-RvkMlik6gl3kQ_XHoXLIBWQyg4optm9wIuC3HK2iJDMFphhmt_3HxVCa2c3nulNutS4VQ4SKauH9oCz7cQrA=="
-INFLUX_ORG = "cuong"
-INFLUX_BUCKET = "test"
+INFLUX_URL = "http://127.0.0.1:8086"
+INFLUX_TOKEN = "4M016XGqX8TR6gxuEyodOo-XKFZmNAw23v48_F71ovWPEqI32i91hteVN3h0AIwPUcZ9qFRH2Sfoq980peSpEA=="
+INFLUX_ORG = "CMN"
+INFLUX_BUCKET = "server_data"
 
 # Initialize InfluxDB Client
 influx_client = InfluxDBClient(url=INFLUX_URL, token=INFLUX_TOKEN, org=INFLUX_ORG)
@@ -26,13 +26,17 @@ write_api = influx_client.write_api(write_options=SYNCHRONOUS)
 # MQTT CALLBACKS
 # ==========================================
 
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        print(f"Connected to MQTT Broker at {MQTT_BROKER}:{MQTT_PORT}")
+def on_connect(client, userdata, flags, reason_code, properties):
+
+    if reason_code == 0:
+        print("Connected to MQTT broker")
+
         client.subscribe(MQTT_TOPIC)
-        print(f"Subscribed to topic: {MQTT_TOPIC}")
+
+        print(f"Subscribed to: {MQTT_TOPIC}")
+
     else:
-        print(f"Failed to connect to MQTT Broker, return code: {rc}")
+        print(f"MQTT connection failed: {reason_code}")
 
 def on_message(client, userdata, msg):
     try:
@@ -99,7 +103,9 @@ def process_and_save_data(data):
 
 if __name__ == "__main__":
     # Setup MQTT Client
-    mqtt_client = mqtt.Client()
+    mqtt_client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2)
+    mqtt_client.username_pw_set("amt","amt123456") 
+
     mqtt_client.on_connect = on_connect
     mqtt_client.on_message = on_message
 
