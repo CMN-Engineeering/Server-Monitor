@@ -12,9 +12,8 @@ MQTT_BROKER = "localhost" # Replace with your MQTT broker IP/Hostname
 MQTT_PORT = 2248
 MQTT_TOPIC = "supervisory"
 
-# InfluxDB Configuration
 INFLUX_URL = "http://127.0.0.1:8086"
-INFLUX_TOKEN = "4M016XGqX8TR6gxuEyodOo-XKFZmNAw23v48_F71ovWPEqI32i91hteVN3h0AIwPUcZ9qFRH2Sfoq980peSpEA=="
+INFLUX_TOKEN = "T9zg8to3vePTCZFymuJ9ETh5PhTTSdlbC7va8m9gf8iLkuLFO6nSR-7TYEWnBN22LSWpR2vT0ZFXXw9M7o71Vw=="
 INFLUX_ORG = "CMN"
 INFLUX_BUCKET = "server_data"
 
