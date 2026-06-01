@@ -4,6 +4,7 @@ const path = require('path');
 const https = require('https');
 const http = require('http');
 const mqtt = require('mqtt');
+const { InfluxDB, Point } = require('@influxdata/influxdb-client');
 
 const app = express();
 
@@ -13,6 +14,18 @@ app.use(express.static(path.join(__dirname, '.')));
 
 const DATA_FILE = path.join(__dirname, 'sys-data.json');
 let messageCount = 0;
+
+// ==========================================
+// INFLUXDB SETUP
+// ==========================================
+// Configure these with your InfluxDB connection details
+const INFLUXDB_URL = process.env.INFLUXDB_URL || 'http://localhost:8086';
+const INFLUXDB_TOKEN = process.env.INFLUXDB_TOKEN || 'your-token-here';
+const INFLUXDB_ORG = process.env.INFLUXDB_ORG || 'your-org';
+const INFLUXDB_BUCKET = process.env.INFLUXDB_BUCKET || 'system-monitoring';
+
+const influxDB = new InfluxDB({ url: INFLUXDB_URL, token: INFLUXDB_TOKEN });
+const writeApi = influxDB.getWriteApi(INFLUXDB_ORG, INFLUXDB_BUCKET);
 
 // ==========================================
 // UTILITIES: READ/WRITE DATA
@@ -30,8 +43,81 @@ const readData = () => {
 const writeData = (data) => {
     try {
         fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 4), 'utf8');
+        // Also write to InfluxDB
+        writeToInfluxDB(data);
     } catch (err) {
         console.error('Error writing to sys-data.json:', err);
+    }
+};
+
+// ==========================================
+// INFLUXDB WRITE FUNCTIONS
+// ==========================================
+const writeToInfluxDB = (sysData) => {
+    try {
+        const points = [];
+
+        // Flatten the hierarchical JSON structure into InfluxDB points
+        if (sysData.factories && Array.isArray(sysData.factories)) {
+            sysData.factories.forEach(factory => {
+                if (factory.storageUnits && Array.isArray(factory.storageUnits)) {
+                    factory.storageUnits.forEach(storage => {
+                        if (storage.machineUnits && Array.isArray(storage.machineUnits)) {
+                            storage.machineUnits.forEach(machine => {
+                                // Create motor status points
+                                if (machine.motors) {
+                                    const motorPoint = new Point('motor_status')
+                                        .tag('factory_id', factory.id)
+                                        .tag('storage_id', storage.id)
+                                        .tag('machine_id', machine.id)
+                                        .tag('machine_type', machine.type || 'unknown')
+                                        .intField('enabled', machine.motors.enabled || 0)
+                                        .intField('control_mode', machine.motors.control_mode || 0);
+                                    
+                                    if (machine.motors.motor_1) {
+                                        motorPoint.intField('motor_1_state', machine.motors.motor_1.state || 0);
+                                    }
+                                    if (machine.motors.motor_2) {
+                                        motorPoint.intField('motor_2_state', machine.motors.motor_2.state || 0);
+                                    }
+                                    
+                                    points.push(motorPoint);
+                                }
+
+                                // Create output status points
+                                if (machine.outputs) {
+                                    Object.keys(machine.outputs).forEach(outputKey => {
+                                        const output = machine.outputs[outputKey];
+                                        const outputPoint = new Point('output_status')
+                                            .tag('factory_id', factory.id)
+                                            .tag('storage_id', storage.id)
+                                            .tag('machine_id', machine.id)
+                                            .tag('machine_type', machine.type || 'unknown')
+                                            .tag('output_id', outputKey)
+                                            .intField('rpm', output.rpm || 0)
+                                            .intField('status', output.status || 0);
+                                        
+                                        points.push(outputPoint);
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+
+        // Write all points to InfluxDB
+        if (points.length > 0) {
+            writeApi.writePoints(points);
+            writeApi.flush().then(() => {
+                console.log(`✅ Written ${points.length} data points to InfluxDB`);
+            }).catch(err => {
+                console.error('❌ Error flushing data to InfluxDB:', err);
+            });
+        }
+    } catch (err) {
+        console.error('Error writing to InfluxDB:', err);
     }
 };
 

@@ -17,6 +17,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@influxdata/influxdb-client": "^1.33.2",
     "cors": "^2.8.5",
     "express": "^4.22.2",
     "mqtt": "^5.15.1",
