@@ -80,7 +80,7 @@
                                 "enabled": 1,
                                 "motor_1": {
                                     "name": "Motor 1",
-                                    "state": 0
+                                    "state": 1
                                 },
                                 "motor_2": {
                                     "name": "Motor 2",
@@ -120,11 +120,11 @@
                                 "enabled": 1,
                                 "motor_1": {
                                     "name": "Motor 1",
-                                    "state": 0
+                                    "state": 1
                                 },
                                 "motor_2": {
                                     "name": "Motor 2",
-                                    "state": 1
+                                    "state": 0
                                 }
                             }
                         }

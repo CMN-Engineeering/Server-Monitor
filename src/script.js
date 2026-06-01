@@ -1,9 +1,8 @@
 // ==========================================
-// 1. INITIALIZATION & STATE
+// 1. KHỞI TẠO BIẾN VÀ CẤU TRÚC DỮ LIỆU
 // ==========================================
 let systemData = null;
 let currentUser = null; 
-let mqttClient = null;
 
 let selectedFactoryIndex = null;
 let selectedStorageIndex = null;
@@ -17,7 +16,7 @@ const detailsTitle = document.getElementById('details-title');
 const detailsContent = document.getElementById('details-content');
 
 // ==========================================
-// 2. AUTHENTICATION
+// 2. XỬ LÝ AUTHENTICATION
 // ==========================================
 function login() {
     const u = document.getElementById('username').value;
@@ -40,6 +39,7 @@ function startApp() {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('app-content').style.display = 'block';
     document.getElementById('user-display').innerText = `👤 ${currentUser.name} (${currentUser.role})`;
+    
     document.body.className = `role-${currentUser.role}`;
     loadSystemData();
 }
@@ -53,42 +53,54 @@ function logout() {
 }
 
 // ==========================================
-// 3. DATA FETCHING & SAVING
+// 3. TẢI VÀ LƯU DỮ LIỆU
 // ==========================================
+// Thay thế hàm loadSystemData hiện tại trong script.js
 async function loadSystemData() {
     try {
+        // Fetch từ API thay vì file tĩnh
         const response = await fetch('/api/load-data');
         if (!response.ok) throw new Error('Failed to load data');
         
         systemData = await response.json();
+        
+        // Load lại danh sách nhà máy
         populateFactories();
         
+        // Tự động load kho và máy nếu đã có dữ liệu đang chọn
         if (selectedFactoryIndex !== null && selectedFactoryIndex !== "") {
             loadStorages();
         }
     } catch (error) {
-        console.error('❌ Lỗi khi tải dữ liệu:', error);
+        console.error('Lỗi khi tải dữ liệu:', error);
     }
 }
 
+// Thay thế hàm saveSystemData hiện tại trong script.js
 async function saveSystemData() {
     try {
         const response = await fetch('/api/save-data', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify(systemData)
         });
         
-        if (!response.ok) throw new Error('Failed to save data to server');
-        console.log('✅ Dữ liệu đã được lưu thành công');
+        if (!response.ok) {
+            throw new Error('Failed to save data to server');
+        }
+        console.log('✅ Dữ liệu đã được lưu thành công vào sys-data.json');
+        
     } catch (error) {
         console.error('❌ Lỗi khi lưu dữ liệu:', error);
+        // Fallback: Lưu vào local storage nếu server lỗi
         localStorage.setItem('monitorSystemData', JSON.stringify(systemData));
     }
 }
 
 // ==========================================
-// 4. DROPDOWN NAVIGATION
+// 4. ĐIỀU HƯỚNG DROPDOWN
 // ==========================================
 function populateFactories() {
     factorySelect.innerHTML = '<option value="">-- Chọn nhà máy --</option>';
@@ -133,7 +145,7 @@ function handleMachineSelection() {
 }
 
 // ==========================================
-// 5. DASHBOARD RENDER & SYNC
+// 5. DASHBOARD FULL RENDER
 // ==========================================
 function viewStorageDashboard() {
     if (selectedFactoryIndex === "" || selectedStorageIndex === "") {
@@ -158,6 +170,7 @@ function viewStorageDashboard() {
         const machine = item.machine;
         const mIdx = item.originalIdx;
         
+        // Cập nhật thẻ h3 hiển thị thêm IP và đổi text nút bấm
         html += `
         <div class="machine-block" style="position: relative; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <h3 style="margin-top:0; border-bottom: 1px solid #eee; padding-bottom:10px; padding-right: 120px;">
@@ -176,6 +189,7 @@ function viewStorageDashboard() {
         
         if (machine.outputs) {
             Object.entries(machine.outputs).forEach(([cKey, conv]) => {
+                console.log(`${mIdx}, '${cKey}'`);
                 const isRunning = parseInt(conv.status) === 1;
                 html += `
                 <div id="output-container-${mIdx}-${cKey}" class="conv-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isRunning ? '#d4edda' : '#f8d7da'}; transition: background 0.3s;">
@@ -190,6 +204,7 @@ function viewStorageDashboard() {
         }
         
         html += `</div>
+            
             <h4 style="margin: 10px 0;">Động cơ (Motors)</h4>`;
         
         if (machine.motors) {
@@ -208,6 +223,7 @@ function viewStorageDashboard() {
             motorKeys.forEach(moKey => {
                 const motor = machine.motors[moKey];
                 const isOn = parseInt(motor.state) === 1;
+                console.log(`mIdx : ${mIdx} - moKey : ${moKey}`)
                 html += `
                 <div id="motor-container-${mIdx}-${moKey}" class="motor-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isOn ? '#d4edda' : '#f8d7da'}; transition: background 0.3s;">
                     <strong style="display:block; margin-bottom:5px;">${motor.name || moKey.replace('_', ' ').toUpperCase()}</strong>
@@ -217,14 +233,19 @@ function viewStorageDashboard() {
                     </button>
                 </div>`;
             });
+            
             html += `</div>`; 
         }
+
         html += `</div>`; 
     });
     html += `</div>`;
     detailsContent.innerHTML = html;
 }
 
+// ==========================================
+// 6. SOFT UPDATE (UI SYNC)
+// ==========================================
 function updateDashboardData() {
     if (!systemData || selectedStorageIndex === "") return;
     
@@ -252,6 +273,7 @@ function updateDashboardData() {
         // Sync Motors
         if (machine.motors) {
             const isMotorsEnabled = machine.motors.enabled === true || parseInt(machine.motors.enabled) === 1;
+            
             const enableBtnEl = document.getElementById(`motor-enable-btn-${mIdx}`);
             const motorListContainer = document.getElementById(`motor-list-container-${mIdx}`);
             
@@ -278,34 +300,38 @@ function updateDashboardData() {
             });
         }
     });
-
-    // Update timestamp
-    const timeEl = document.getElementById('dashboard-time');
-    if (timeEl) timeEl.innerText = `Cập nhật lúc: ${new Date().toLocaleTimeString()}`;
 }
-
-// ==========================================
-// 6. MACHINE CONTROL COMMANDS
-// ==========================================
 function openMachineControl(machine_ip) {
+    console.log("Opening control for IP:", machine_ip);
+    
+    // 1. Check if the IP is empty or undefined
     if (!machine_ip || machine_ip.trim() === "") {
-        alert("Máy này chưa được cấu hình địa chỉ IP!");
+        alert("Máy này chưa được cấu hình địa chỉ IP (IP đang trống)!");
         return;
     }
+
     let url = machine_ip.trim();
+
+    // 2. Add http:// if the protocol is missing so the browser routes it externally
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
         url = 'http://' + url;
     }
+
+    // 3. Open in a new tab/window using '_blank'
     window.open(url, '_blank');
 }
-
+// ==========================================
+// 7. CÁC HÀM TƯƠNG TÁC (COMMANDS)
+// ==========================================
 window.togglecomponent = function(machineIdx, convKey) {
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
     const factory_id = systemData.factories[selectedFactoryIndex].id;
     const storage_id = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].id;
-    
-    machine.outputs[convKey].status = parseInt(machine.outputs[convKey].status) === 1 ? 0 : 1;
-    fetch(`/toggleOutputState?factory_id=${factory_id}&storage_id=${storage_id}&machine_id=${machine.id}&machine_type=${machine.type}&output_id=${convKey}&output_state=${machine.outputs[convKey].status}`);
+    const machine_type = machine.type;
+    const machine_id = machine.id;
+    const component = machine.outputs[convKey];
+    component.status = parseInt(component.status) === 1 ? 0 : 1;
+    fetch(`/toggleOutputState?factory_id=${factory_id}&storage_id=${storage_id}&machine_id=${machine_id}&machine_type=${machine_type}&output_id=${convKey}&output_state=${component.status}`)
     saveSystemData();
 }
 
@@ -313,55 +339,289 @@ window.toggleMotorState = function(machineIdx, motorKey) {
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
     const factory_id = systemData.factories[selectedFactoryIndex].id;
     const storage_id = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].id;
-    
-    machine.motors[motorKey].state = parseInt(machine.motors[motorKey].state) === 1 ? 0 : 1;
-    fetch(`/toggleMotorState?factory_id=${factory_id}&storage_id=${storage_id}&machine_id=${machine.id}&machine_type=${machine.type}&motor_id=${motorKey}&motor_state=${machine.motors[motorKey].state}`);
+    const machine_type = machine.type;
+    const machine_id = machine.id;
+    const motor = machine.motors[motorKey];
+    motor.state = parseInt(motor.state) === 1 ? 0 : 1;
+    fetch(`/toggleMotorState?factory_id=${factory_id}&storage_id=${storage_id}&machine_id=${machine_id}&machine_type=${machine_type}&motor_id=${motorKey}&motor_state=${motor.state}`)
     saveSystemData();
 }
 
 window.toggleMotorEnable = function(machineIdx) {
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
+    
     if (machine.motors) {
-        machine.motors.enabled = parseInt(machine.motors.enabled) === 1 ? 0 : 1;
+        const currentState = machine.motors.enabled;
+        let newState;
+        
+        if (typeof currentState === 'boolean') {
+            newState = !currentState;
+        } else {
+            newState = parseInt(currentState) === 1 ? 0 : 1;
+        }
+        
+        machine.motors.enabled = newState;
         saveSystemData();
         viewStorageDashboard(); 
     }
 }
 
 // ==========================================
-// 7. WEBSOCKET (MQTT) INTEGRATION
+// 8. KHỞI ĐỘNG VÀ SOCKET / MQTT WEBSOCKET
 // ==========================================
+
+// Socket.IO connection (disabled - using MQTT WebSocket instead)
+// const socket = io();
+// socket.on('system-data-updated', (updatedData) => {
+//     systemData = updatedData;
+//     updateDashboardData();
+// });
+
+// MQTT WebSocket connection for real-time data updates
+let mqttClient;
+
 function initializeMQTTConnection() {
     const clientId = 'monitor-client-' + Math.random().toString(36).substring(7);
-    const host = 'ws://localhost:9001/mqtt'; 
+    const host = 'ws://localhost:9001/mqtt'; // Change to your MQTT broker address
     
-    mqttClient = mqtt.connect(host, {
+    const options = {
         keepalive: 60,
         username: 'amt',
         password: 'amt123456',
         clientId: clientId,
+        protocolId: 'MQTT',
+        protocolVersion: 4,
         clean: true,
-        reconnectPeriod: 1000
+        reconnectPeriod: 1000,
+        connectTimeout: 30 * 1000,
+    };
+    
+    mqttClient = mqtt.connect(host, options);
+    
+    mqttClient.on('error', (err) => {
+        console.error('MQTT Error:', err);
+    });
+    
+    mqttClient.on('reconnect', () => {
+        console.log('MQTT Reconnecting...');
     });
     
     mqttClient.on('connect', () => {
-        console.log('✅ UI MQTT Connected:', clientId);
-        mqttClient.subscribe('system/data/update', { qos: 0 });
+        console.log('MQTT Connected:', clientId);
+        // Subscribe to system data topics
+        subscribeToDataTopics();
     });
     
+    // Handle incoming messages
     mqttClient.on('message', (topic, message) => {
         try {
-            if (topic === 'system/data/update') {
-                const updatedData = JSON.parse(message.toString());
-                if (updatedData && updatedData.factories) {
-                    systemData = updatedData;
-                    updateDashboardData();
-                }
-            }
+            const messageStr = message.toString();
+            console.log('MQTT Message from ' + topic + ':', messageStr);
+            handleMQTTMessage(topic, messageStr);
         } catch (error) {
-            console.error('❌ Error parsing broadcast message:', error);
+            console.error('Error processing MQTT message:', error);
         }
     });
+}
+
+function generateTopicsFromData() {
+    const topics = [];
+    
+    // Kiểm tra xem systemData.factories có tồn tại và là một mảng không
+    if (!systemData || !Array.isArray(systemData.factories)) return topics;
+    
+    // Duyệt qua mảng các nhà máy
+    systemData.factories.forEach(factory => {
+        if (!Array.isArray(factory.storageUnits)) return;
+        
+        // Duyệt qua mảng các kho trong nhà máy
+        factory.storageUnits.forEach(storage => {
+            if (!Array.isArray(storage.machineUnits)) return;
+            
+            // Duyệt qua mảng các máy trong kho
+            storage.machineUnits.forEach(machine => {
+                // Đảm bảo machine type có giá trị, nếu trống thì để mặc định tránh lỗi undefined trên topic
+                const machineType = machine.type || "unknown_type";
+                
+                // Generate motor topics
+                topics.push(`${factory.id}/${storage.id}/${machineType}/${machine.id}/motor/status`);
+                
+                // Nếu sau này bạn cần subscribe riêng cho output, bạn có thể duyệt qua object machine.outputs:
+                // if (machine.outputs) {
+                //     Object.keys(machine.outputs).forEach(outputId => {
+                //         topics.push(`${factory.id}/${storage.id}/${machineType}/${machine.id}/${outputId}/status`);
+                //     });
+                // }
+            });
+        });
+    });
+    
+    return topics;
+}
+function subscribeToDataTopics() {
+    if (!mqttClient) return;
+    
+    // Generate topics from system data
+    const generatedTopics = generateTopicsFromData();
+    for(let topic of generatedTopics) {
+        console.log('Generated topic to subscribe:', topic);
+    }
+    
+    // Add wildcard topics for flexibility
+    const staticTopics = [
+        'system/data/update'
+    ];
+    
+    const allTopics = [...generatedTopics, ...staticTopics];
+    
+    allTopics.forEach(topic => {
+        mqttClient.subscribe(topic, { qos: 0 }, (err) => {
+            if (!err) {
+                console.log('Subscribed to topic:', topic);
+            } else {
+                console.error('Subscription error for topic ' + topic + ':', err);
+            }
+        });
+    });
+    
+    console.log('Total subscribed topics:', allTopics.length);
+}
+
+function handleMQTTMessage(topic, message) {
+    if (!systemData) return;
+    
+    try {
+        // Try parsing as JSON first
+        let data = message;
+        if (typeof message === 'string' && message.startsWith('{')) {
+            data = JSON.parse(message);
+        }
+        
+        // Parse topic and update corresponding data
+        const topicParts = topic.split('/');
+        
+        // Handle output status updates: factory/{id}/storage/{id}/machine/{id}/output/{id}/status
+        if (topic.includes('/motor/status')) {
+            const factoryId = topicParts[0];
+            const storageId = topicParts[1];
+            const machineId = topicParts[3];
+            
+            if (data && String(data["Control Mode"]) === "2") {
+                updateMotorStatusBatch(factoryId, storageId, machineId, data);
+                updateDashboardData(); // Cập nhật lại UI ngay lập tức
+                return; // Ngừng xử lý các logic bên dưới
+            }
+        }
+                
+        updateDashboardData();
+    } catch (error) {
+        console.error('Error handling MQTT message:', error);
+    }
+}
+
+function updateMotorStatusBatch(factoryId, storageId, machineId, data) {
+    if (!systemData || !systemData.factories) return;
+    
+    // Tìm Factory
+    const factory = systemData.factories.find(f => f.id === factoryId);
+    if (!factory) return;
+    
+    // Tìm Kho
+    const storage = factory.storageUnits.find(s => s.id === storageId);
+    if (!storage) return;
+    
+    // Tìm Máy
+    const machine = storage.machineUnits.find(m => m.id === machineId);
+    if (!machine) return;
+    
+    // Khởi tạo object motors nếu chưa có
+    if (!machine.motors) machine.motors = {};
+    
+    // 1. Cập nhật trạng thái "Enabled" (Kích hoạt / Vô hiệu hóa toàn bộ)
+    if (data["Enabled"] !== undefined) {
+        machine.motors.enabled = parseInt(data["Enabled"]);
+    }
+    
+    // 2. Cập nhật trạng thái Motor 1
+    if (data["Motor 1 State"] !== undefined) {
+        if (!machine.motors.motor_1) machine.motors.motor_1 = { name: "Motor 1", state: 0 };
+        machine.motors.motor_1.state = parseInt(data["Motor 1 State"]);
+    }
+    
+    // 3. Cập nhật trạng thái Motor 2
+    if (data["Motor 2 State"] !== undefined) {
+        if (!machine.motors.motor_2) machine.motors.motor_2 = { name: "Motor 2", state: 0 };
+        machine.motors.motor_2.state = parseInt(data["Motor 2 State"]);
+    }
+    
+    console.log(`✅ Đã cập nhật UI trực tiếp cho ${machineId} từ Broker!`);
+}
+
+function updateOutputData(factoryId, storageId, machineId, outputId, data) {
+    if (!systemData || !systemData.factories) return;
+    
+    const factory = systemData.factories.find(f => f.id === factoryId);
+    if (!factory) return;
+    
+    const storage = factory.storageUnits.find(s => s.id === storageId);
+    if (!storage) return;
+    
+    const machine = storage.machineUnits.find(m => m.id === machineId);
+    if (!machine || !machine.outputs) return;
+    
+    const output = machine.outputs[outputId];
+    if (output) {
+        if (typeof data === 'object') {
+            Object.assign(output, data);
+        } else {
+            output.status = parseInt(data);
+        }
+    }
+}
+
+function updateMotorData(factoryId, storageId, machineId, motorId, data) {
+    if (!systemData || !systemData.factories) return;
+    
+    const factory = systemData.factories.find(f => f.id === factoryId);
+    if (!factory) return;
+    
+    const storage = factory.storageUnits.find(s => s.id === storageId);
+    if (!storage) return;
+    
+    const machine = storage.machineUnits.find(m => m.id === machineId);
+    if (!machine || !machine.motors) return;
+    
+    const motor = machine.motors[motorId];
+    if (motor) {
+        if (typeof data === 'object') {
+            Object.assign(motor, data);
+        } else {
+            motor.state = parseInt(data);
+        }
+    }
+}
+
+function updateMachineAllData(machineData) {
+    if (!systemData || !systemData.factories) return;
+    
+    // Find and update machine data by comparing IDs
+    for (let factory of systemData.factories) {
+        for (let storage of factory.storageUnits) {
+            for (let i = 0; i < storage.machineUnits.length; i++) {
+                if (storage.machineUnits[i].id === machineData.id) {
+                    // Update outputs
+                    if (machineData.outputs) {
+                        Object.assign(storage.machineUnits[i].outputs, machineData.outputs);
+                    }
+                    // Update motors
+                    if (machineData.motors) {
+                        Object.assign(storage.machineUnits[i].motors, machineData.motors);
+                    }
+                    return;
+                }
+            }
+        }
+    }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -369,15 +629,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedSession) {
         currentUser = JSON.parse(savedSession);
         startApp();
-        setTimeout(initializeMQTTConnection, 500);
+        // Initialize MQTT connection after app starts
+        setTimeout(() => {
+            initializeMQTTConnection();
+        }, 500);
     } else {
         document.getElementById('login-screen').style.display = 'flex';
     }
 });
 
 // ==========================================
-// 8. ADMIN MANAGEMENT 
+// 9. QUẢN LÝ THÊM / XÓA / SỬA (ADMIN ONLY)
 // ==========================================
+
 function checkAdminAccess() {
     if (!currentUser || currentUser.role !== 'admin') {
         alert("Thao tác bị từ chối: Chỉ Administrator mới có quyền thực hiện!");
@@ -386,77 +650,141 @@ function checkAdminAccess() {
     return true;
 }
 
+// --- QUẢN LÝ NHÀ MÁY (FACTORY) ---
+
 function addFactory() {
     if (!checkAdminAccess()) return;
-    const factoryName = prompt("Nhập TÊN Nhà máy mới (Name):");
-    const factoryId = prompt("Nhập ID Nhà máy mới (ID - Không có khoảng trắng):", "Factory_X");
     
-    if (!factoryName || !factoryId) return;
+    const factoryName = prompt("Nhập TÊN Nhà máy mới (Name):");
+    if (!factoryName || factoryName.trim() === "") return;
+
+    const factoryId = prompt("Nhập ID Nhà máy mới (ID - Không có khoảng trắng):", "Factory_X");
+    if (!factoryId || factoryId.trim() === "") return;
+
+    if (!systemData) systemData = { factories: [] };
     if (!systemData.factories) systemData.factories = [];
     
-    systemData.factories.push({ id: factoryId.trim(), name: factoryName.trim(), storageUnits: [] });
+    systemData.factories.push({
+        id: factoryId.trim(),
+        name: factoryName.trim(),
+        storageUnits: []
+    });
+    
     saveSystemData();
     populateFactories();
 }
 
 function deleteFactory() {
-    if (!checkAdminAccess() || selectedFactoryIndex === "" || selectedFactoryIndex === null) return alert("Chọn một nhà máy để xóa!");
+    if (!checkAdminAccess()) return;
+    
+    if (selectedFactoryIndex === "" || selectedFactoryIndex === null) {
+        alert("Vui lòng chọn một nhà máy để xóa!");
+        return;
+    }
     
     const factory = systemData.factories[selectedFactoryIndex];
-    if (confirm(`Bạn có chắc chắn muốn xóa nhà máy "${factory.name}"?`)) {
+    if (confirm(`Bạn có chắc chắn muốn xóa nhà máy "${factory.name}" và toàn bộ dữ liệu bên trong không?`)) {
         systemData.factories.splice(selectedFactoryIndex, 1);
         selectedFactoryIndex = ""; 
+        
         saveSystemData();
         populateFactories();
         loadStorages(); 
     }
 }
 
+// --- QUẢN LÝ KHO (STORAGE) ---
+
 function addStorage() {
-    if (!checkAdminAccess() || selectedFactoryIndex === "" || selectedFactoryIndex === null) return alert("Chọn nhà máy trước khi thêm kho!");
+    if (!checkAdminAccess()) return;
     
+    if (selectedFactoryIndex === "" || selectedFactoryIndex === null) {
+        alert("Vui lòng chọn một nhà máy trước khi thêm kho!");
+        return;
+    }
+
     const storageName = prompt("Nhập TÊN Kho mới (Name):");
-    const storageId = prompt("Nhập ID Kho mới (ID):", "Warehouse_X");
-    
-    if (!storageName || !storageId) return;
+    if (!storageName || storageName.trim() === "") return;
+
+    const storageId = prompt("Nhập ID Kho mới (ID - Không có khoảng trắng):", "Warehouse_X");
+    if (!storageId || storageId.trim() === "") return;
+
     const factory = systemData.factories[selectedFactoryIndex];
     if (!factory.storageUnits) factory.storageUnits = [];
     
-    factory.storageUnits.push({ id: storageId.trim(), name: storageName.trim(), machineUnits: [] });
+    factory.storageUnits.push({
+        id: storageId.trim(),
+        name: storageName.trim(),
+        machineUnits: []
+    });
+    
     saveSystemData();
     loadStorages();
+    storageSelect.value = factory.storageUnits.length - 1;
+    loadMachines(); 
 }
 
 function deleteStorage() {
-    if (!checkAdminAccess() || selectedStorageIndex === "" || selectedStorageIndex === null) return alert("Chọn một kho để xóa!");
+    if (!checkAdminAccess()) return;
     
+    if (selectedFactoryIndex === "" || selectedStorageIndex === "" || selectedStorageIndex === null) {
+        alert("Vui lòng chọn một kho để xóa!");
+        return;
+    }
+
     const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
-    if (confirm(`Xóa kho "${storage.name}"?`)) {
+    if (confirm(`Bạn có chắc chắn muốn xóa kho "${storage.name}" và các máy bên trong không?`)) {
         systemData.factories[selectedFactoryIndex].storageUnits.splice(selectedStorageIndex, 1);
         selectedStorageIndex = ""; 
+        
         saveSystemData();
         loadStorages();
     }
 }
 
+// --- QUẢN LÝ MÁY (MACHINE) ---
+
 function addMachine() {
-    if (!checkAdminAccess() || selectedStorageIndex === "" || selectedStorageIndex === null) return alert("Chọn kho trước khi thêm máy!");
-
-    const machineName = prompt("Nhập TÊN Máy mới:", "Machine_New");
-    const machineId = prompt("Nhập ID Máy mới:", "Machine_X");
-    const machineType = prompt("Nhập loại máy:", "scsc");
-    const machineIp = prompt("Nhập địa chỉ IP máy:", "192.168.1.100");
+    if (!checkAdminAccess()) return;
     
-    if (!machineName || !machineId) return;
-
-    let outputsObj = {};
-    for (let i = 1; i <= (parseInt(prompt("Số lượng Outputs:", "4")) || 0); i++) {
-        outputsObj[`output_${i}`] = { name: `OUTPUT ${i}`, rpm: 0, status: 0 };
+    if (selectedStorageIndex === "" || selectedStorageIndex === null) {
+        alert("Vui lòng chọn một kho trước khi thêm máy!");
+        return;
     }
 
-    let motorsObj = { control_mode: 0, enabled: 0 };
-    for (let i = 1; i <= (parseInt(prompt("Số lượng Motors:", "2")) || 0); i++) {
-        motorsObj[`motor_${i}`] = { name: `Motor ${i}`, state: 0 };
+    const machineName = prompt("Nhập TÊN Máy mới (Name):", "Machine_New");
+    if (!machineName || machineName.trim() === "") return;
+
+    const machineId = prompt("Nhập ID Máy mới (ID):", "Machine_X");
+    if (!machineId || machineId.trim() === "") return;
+
+    const machineType = prompt("Nhập loại máy (Type):", "scsc");
+    const machineIp = prompt("Nhập địa chỉ IP máy:", "192.168.1.100");
+
+    const numOutputsStr = prompt("Nhập số lượng Outputs cho máy này (VD: 4):", "4");
+    const numOutputs = parseInt(numOutputsStr) || 0;
+
+    const numMotorsStr = prompt("Nhập số lượng Motors cho máy này (VD: 2):", "2");
+    const numMotors = parseInt(numMotorsStr) || 0;
+
+    let outputsObj = {};
+    for (let i = 1; i <= numOutputs; i++) {
+        outputsObj[`output_${i}`] = {
+            name: `OUTPUT ${i}`,
+            rpm: 0,
+            status: 0
+        };
+    }
+
+    let motorsObj = {
+        control_mode: 0,
+        enabled: 0
+    };
+    for (let i = 1; i <= numMotors; i++) {
+        motorsObj[`motor_${i}`] = {
+            name: `Motor ${i}`,
+            state: 0
+        };
     }
 
     const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
@@ -471,53 +799,83 @@ function addMachine() {
         motors: motorsObj
     });
     
+    
     saveSystemData();
     loadMachines();
 }
 
 function deleteMachine() {
-    if (!checkAdminAccess() || selectedMachineIndex === "" || selectedMachineIndex === null) return alert("Chọn một máy để xóa!");
+    if (!checkAdminAccess()) return;
+    
+    if (selectedMachineIndex === "" || selectedMachineIndex === null) {
+        alert("Vui lòng chọn một máy cụ thể trong dropdown để xóa!");
+        return;
+    }
 
     const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
-    if (confirm(`Xóa máy "${storage.machineUnits[selectedMachineIndex].name}"?`)) {
+    const machine = storage.machineUnits[selectedMachineIndex];
+    
+    if (confirm(`Bạn có chắc chắn muốn xóa máy "${machine.name}" không?`)) {
         storage.machineUnits.splice(selectedMachineIndex, 1);
         selectedMachineIndex = ""; 
+        
         saveSystemData();
         loadMachines();
     }
 }
 
+// Cập nhật hàm Edit ID cũ thành Edit ID & IP với validation
 window.editMachineDetails = function(machineIdx) {
     if (!checkAdminAccess()) return;
     
     const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
     const machine = storage.machineUnits[machineIdx];
     
+    // --- 1. XỬ LÝ SỬA ID ---
     let newId = prompt(`Sửa ID cho máy "${machine.name}":\n(ID hiện tại: ${machine.id})`, machine.id);
-    if (newId === null) return; 
+    if (newId === null) return; // Hủy thao tác
     newId = newId.trim();
 
     if (newId !== "" && newId !== machine.id) {
-        if (storage.machineUnits.some((m, idx) => m.id === newId && idx !== machineIdx)) {
-            return alert(`Lỗi: ID "${newId}" đã bị trùng trong kho này.`);
+        // Kiểm tra xem ID mới có bị trùng với máy NÀO KHÁC trong cùng kho không
+        const isDuplicate = storage.machineUnits.some((m, idx) => m.id === newId && idx !== machineIdx);
+        if (isDuplicate) {
+            alert(`Lỗi: ID "${newId}" đã được sử dụng bởi một máy khác trong kho này. Vui lòng chọn ID khác!`);
+            return; 
         }
-    } else newId = machine.id;
+    } else {
+        newId = machine.id; // Nếu để trống hoặc không đổi thì giữ nguyên
+    }
 
-    let newIp = prompt(`Sửa IP cho máy:\n(IP hiện tại: ${machine.ip || ""})`, machine.ip || "");
-    if (newIp === null) return; 
+    // --- 2. XỬ LÝ SỬA IP ---
+    let currentIp = machine.ip || "";
+    let newIp = prompt(`Sửa IP cho máy "${machine.name}":\n(IP hiện tại: ${currentIp})`, currentIp);
+    if (newIp === null) return; // Hủy thao tác
     newIp = newIp.trim();
 
-    if (newIp !== "" && newIp !== machine.ip) {
-        if (!/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(newIp)) {
-            return alert("Lỗi: IP không hợp lệ.");
+    if (newIp !== "" && newIp !== currentIp) {
+        // Kiểm tra định dạng IPv4 chuẩn (VD: 192.168.1.1)
+        const ipv4Regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+        
+        if (!ipv4Regex.test(newIp)) {
+            alert(`Lỗi: IP "${newIp}" không hợp lệ. Vui lòng nhập đúng định dạng IPv4 (Ví dụ: 192.168.1.100).`);
+            return;
         }
-    } else newIp = machine.ip;
+    } else {
+        newIp = currentIp; // Giữ nguyên nếu trống
+    }
 
-    if (newId !== machine.id || newIp !== machine.ip) {
+    // --- 3. LƯU THAY ĐỔI ---
+    if (newId !== machine.id || newIp !== currentIp) {
         machine.id = newId;
         machine.ip = newIp;
+        saveSystemData(); 
+        
+        alert(`Thành công!\nID: ${newId}\nIP: ${newIp}`);
         saveSystemData();
         loadMachines();
-        viewStorageDashboard();
+        viewStorageDashboard(); // Render lại dashboard để thấy thay đổi
+    } else {
+        alert("Không có thay đổi nào được lưu.");
     }
 }
