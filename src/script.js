@@ -444,7 +444,7 @@ function generateTopicsFromData() {
                 const machineType = machine.type || "unknown_type";
                 
                 // Generate motor topics
-                topics.push(`${factory.id}/${storage.id}/${machineType}/${machine.id}//motor_status`);
+                topics.push(`${factory.id}/${storage.id}/${machineType}/${machine.id}/motor/status`);
                 
                 // Nếu sau này bạn cần subscribe riêng cho output, bạn có thể duyệt qua object machine.outputs:
                 // if (machine.outputs) {
@@ -501,7 +501,7 @@ function handleMQTTMessage(topic, message) {
         const topicParts = topic.split('/');
         
         // Handle output status updates: factory/{id}/storage/{id}/machine/{id}/output/{id}/status
-        if (topic.includes('//motor_status')) {
+        if (topic.includes('/motor/status')) {
             const factoryId = topicParts[0];
             const storageId = topicParts[1];
             const machineId = topicParts[3];
@@ -798,6 +798,7 @@ function addMachine() {
         outputs: outputsObj,
         motors: motorsObj
     });
+    
     
     saveSystemData();
     loadMachines();

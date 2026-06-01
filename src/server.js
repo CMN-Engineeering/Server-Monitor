@@ -45,7 +45,7 @@ const mqttClient = mqtt.connect('mqtt://localhost:1883', {
 
 mqttClient.on('connect', () => {
     console.log('✅ Connected to MQTT Broker');
-    mqttClient.subscribe('+/+/+/+/#', (err) => {
+    mqttClient.subscribe('+/+/+/+/motor/status', (err) => {
         if (err) console.error('MQTT Subscription Error:', err);
     });
 });
@@ -81,7 +81,7 @@ function updateDataFromMqtt(topic, payload) {
             if (machine) {
                 
                 // 1. Update Motors
-                if (topic.includes('motor_status') || payload['Control Mode'] !== undefined) {
+                if (topic.includes('/motor/status') || payload['Control Mode'] !== undefined) {
                     const controlMode = String(payload['Control Mode'] || "");
                     
                     if (controlMode === "2") {

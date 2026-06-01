@@ -40,7 +40,87 @@
                                 "enabled": 1,
                                 "motor_1": {
                                     "name": "Motor 1",
+                                    "state": 0
+                                },
+                                "motor_2": {
+                                    "name": "Motor 2",
+                                    "state": 0
+                                }
+                            }
+                        },
+                        {
+                            "id": "Machine_1",
+                            "name": "Machine_1",
+                            "type": "Tank_Conveyor",
+                            "ip": "192.168.1.100",
+                            "outputs": {
+                                "output_1": {
+                                    "name": "OUTPUT 1",
+                                    "rpm": 0,
+                                    "status": 0
+                                },
+                                "output_2": {
+                                    "name": "OUTPUT 2",
+                                    "rpm": 0,
+                                    "status": 0
+                                },
+                                "output_3": {
+                                    "name": "OUTPUT 3",
+                                    "rpm": 0,
+                                    "status": 0
+                                },
+                                "output_4": {
+                                    "name": "OUTPUT 4",
+                                    "rpm": 0,
+                                    "status": 0
+                                }
+                            },
+                            "motors": {
+                                "control_mode": 0,
+                                "enabled": 1,
+                                "motor_1": {
+                                    "name": "Motor 1",
+                                    "state": 0
+                                },
+                                "motor_2": {
+                                    "name": "Motor 2",
                                     "state": 1
+                                }
+                            }
+                        },
+                        {
+                            "id": "Machine_3",
+                            "name": "Machine_3",
+                            "type": "Tank_Conveyor",
+                            "ip": "192.168.1.100",
+                            "outputs": {
+                                "output_1": {
+                                    "name": "OUTPUT 1",
+                                    "rpm": 0,
+                                    "status": 0
+                                },
+                                "output_2": {
+                                    "name": "OUTPUT 2",
+                                    "rpm": 0,
+                                    "status": 1
+                                },
+                                "output_3": {
+                                    "name": "OUTPUT 3",
+                                    "rpm": 0,
+                                    "status": 0
+                                },
+                                "output_4": {
+                                    "name": "OUTPUT 4",
+                                    "rpm": 0,
+                                    "status": 0
+                                }
+                            },
+                            "motors": {
+                                "control_mode": 0,
+                                "enabled": 1,
+                                "motor_1": {
+                                    "name": "Motor 1",
+                                    "state": 0
                                 },
                                 "motor_2": {
                                     "name": "Motor 2",
