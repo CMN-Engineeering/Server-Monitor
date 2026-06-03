@@ -91,6 +91,7 @@ async function saveSystemData() {
         if (!response.ok) {
             throw new Error('Failed to save data to server');
         }
+        console.log(systemData);
         console.log('✅ Dữ liệu đã được lưu thành công vào sys-data.json');
         
     } catch (error) {
@@ -223,6 +224,17 @@ function viewStorageDashboard() {
             const motorKeys = Object.keys(machine.motors).filter(k => k.startsWith('motor_'));
             motorKeys.forEach(moKey => {
                 const motor = machine.motors[moKey];
+                const disabled = parseInt(motor.state) === -1;
+                if(disabled){
+                    html += `
+                        <div id="motor-container-${mIdx}-${moKey}" class="motor-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isOn ? '#d4edda' : '#f8d7da'}; transition: background 0.3s;">
+                            <strong style="display:block; margin-bottom:5px;">${motor.name || moKey.replace('_', ' ').toUpperCase()}</strong>
+                            <p id="motor-status-${mIdx}-${moKey}" style="margin:5px 0;">Trạng thái: Đã vô hiệu hóa</p>
+                            <button id="motor-btn-${mIdx}-${moKey}" style="width:100%; background: grey; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;"onclick="toggleMotorState(${mIdx}, '${moKey}')">
+                                Kích hoạt
+                            </button>
+                        </div>`;
+                }
                 const isOn = parseInt(motor.state) === 1;
                 console.log(`mIdx : ${mIdx} - moKey : ${moKey}`)
                 html += `
@@ -287,16 +299,24 @@ function updateDashboardData() {
             const motorKeys = Object.keys(machine.motors).filter(k => k.startsWith('motor_'));
             motorKeys.forEach(moKey => {
                 const motor = machine.motors[moKey];
+                const isEnable = parseInt(motor.state) !== -1;
                 const isOn = parseInt(motor.state) === 1;
                 const container = document.getElementById(`motor-container-${mIdx}-${moKey}`);
                 const statusEl = document.getElementById(`motor-status-${mIdx}-${moKey}`);
                 const btnEl = document.getElementById(`motor-btn-${mIdx}-${moKey}`);
 
-                if (container && statusEl && btnEl) {
-                    container.style.background = isOn ? '#d4edda' : '#f8d7da';
-                    statusEl.innerText = `Trạng thái: ${isOn ? '🟢 Đang chạy' : '🔴 Dừng'}`;
-                    btnEl.style.background = isOn ? '#dc3545' : '#28a745';
-                    btnEl.innerText = isOn ? 'Tắt' : 'Bật';
+                if(!isEnable){
+                    container.style.background = 'grey';
+                    statusEl.innerText = `Trạng thái: Đã vô hiệu hóa`;
+                    btnEl.style.background = '#28a745';
+                    btnEl.innerText = 'Kích hoạt';
+                }else{
+                    if (container && statusEl && btnEl) {
+                        container.style.background = isOn ? '#d4edda' : '#f8d7da';
+                        statusEl.innerText = `Trạng thái: ${isOn ? '🟢 Đang chạy' : '🔴 Dừng'}`;
+                        btnEl.style.background = isOn ? '#dc3545' : '#28a745';
+                        btnEl.innerText = isOn ? 'Tắt' : 'Bật';
+                    }
                 }
             });
         }
@@ -552,6 +572,7 @@ function updateMotorStatusBatch(factoryId, storageId, machineId, data) {
     // 3. Cập nhật trạng thái Motor 2
     if (data["Motor 2 State"] !== undefined) {
         if (!machine.motors.motor_2) machine.motors.motor_2 = { name: "Motor 2", state: 0 };
+        console.log(`Motor 2 State: ${parseInt(data["Motor 2 State"])}`)
         machine.motors.motor_2.state = parseInt(data["Motor 2 State"]);
     }
     
@@ -895,7 +916,7 @@ function detectDevTool() {
 
     console.clear();
 
-    if (tableTime - logTime > 10) {
+    if (tableTime - logTime >20) {
         return true;
     }
 
@@ -917,4 +938,4 @@ function lockDevTool() {
     }
 }
 
-setInterval(lockDevTool, 200);
+// setInterval(lockDevTool, 200);
