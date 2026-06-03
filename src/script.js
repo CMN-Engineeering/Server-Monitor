@@ -915,6 +915,7 @@ function lockDevTool(){
         currentUser = null;
         localStorage.removeItem('monitorSession'); 
         window.location.reload();
+        document.body.innerHTML =`"<h1 style = "font-weight : bold">DevTool Detected! Close to continue!</h1>"`
         isOpen = true;
     }
     else{
