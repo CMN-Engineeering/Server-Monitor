@@ -44,8 +44,9 @@ function startApp() {
     loadSystemData();
 }
 
-function logout() {
-    if (confirm("Bạn có chắc chắn muốn đăng xuất không?")) {
+function logout(i) {
+    let confirmed = i == 0 ?  confirm("Bạn có chắc chắn muốn đăng xuất không?") : true;
+    if (confirmed) {
         currentUser = null;
         localStorage.removeItem('monitorSession'); 
         window.location.reload();
@@ -879,5 +880,41 @@ window.editMachineDetails = function(machineIdx) {
         alert("Không có thay đổi nào được lưu.");
     }
 }
+function detectDevTool() {
+    const data = Array.from({ length: 5000 }, (_, i) => ({
+        index: i,
+        value: Math.random()
+    }));
 
-// DEVTOOL OPEN CHECK 
+    const start1 = performance.now();
+    const logTime = performance.now() - start1;
+
+    const start2 = performance.now();
+    console.table(data);
+    const tableTime = performance.now() - start2;
+
+    console.clear();
+
+    if (tableTime - logTime > 10) {
+        return true;
+    }
+
+    return false;
+}
+
+let isOpen = false;
+
+function lockDevTool() {
+    if (detectDevTool()) {
+        if (!isOpen) {
+            isOpen = true;
+            logout(1);
+            // Redirect browser
+            window.location.href = "/none.html";
+        }
+    } else {
+        isOpen = false;
+    }
+}
+
+setInterval(lockDevTool, 200);

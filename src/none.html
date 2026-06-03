@@ -1,46 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
+<style>
+
+#return-btn{
+    width: 200px;
+    height: 50px;
+    background-color: grey;
+    display: flex;
+    color: white;
+    text-decoration: none;
+    border-radius: 50px;
+    justify-content: center;
+    font-size: large;
+    align-items: center;
+}
+#return-btn:hover{
+    font-size: 20px;
+    font-weight: bold;
+    width: 300px;
+}
+</style>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 </head>
 <body>
-   <h1 style = "font-weight : bold">DevTool Detected! Close to continue!</h1>
+   <div style="color:red;font-weight: bold;font-size:50px;display: flex; align-items:center; justify-content:center">
+        DevTool Detected! Close to continue!
+   </div>
+   <div style="margin-top : 15px;display: flex; align-items:center; justify-content:center">
+    <li style="list-style-type: none;">
+        <a href="index.html" id = "return-btn">Return to Main Page</a>
+   </li>
+   </div>
 </body>
-<script>
-    function detectDevTool() {
-        const data = Array.from({ length: 5000 }, (_, i) => ({
-            index: i,
-            value: Math.random()
-        }));
-
-        const start1 = performance.now();
-        console.log(data);
-        const logTime = performance.now() - start1;
-
-        const start2 = performance.now();
-        console.table(data);
-        const tableTime = performance.now() - start2;
-
-        console.clear();
-
-        console.log("log:", logTime);
-        console.log("table:", tableTime);
-
-        // Threshold depends on browser/device
-        if (tableTime - logTime > 10) {
-            console.warn("DevTools may be open");
-            return true;
-        }
-
-        return false;
-    }
-    function returnMain(){
-        if(!detectDevTool()){
-            window.location.href = "index.html";
-        }
-    }
-    setInterval(returnMain,200);
-</script>
 </html>
