@@ -879,3 +879,49 @@ window.editMachineDetails = function(machineIdx) {
         alert("Không có thay đổi nào được lưu.");
     }
 }
+
+// DEVTOOL OPEN CHECK 
+function detectDevTool() {
+    const data = Array.from({ length: 5000 }, (_, i) => ({
+        index: i,
+        value: Math.random()
+    }));
+
+    const start1 = performance.now();
+    console.log(data);
+    const logTime = performance.now() - start1;
+
+    const start2 = performance.now();
+    console.table(data);
+    const tableTime = performance.now() - start2;
+
+    console.clear();
+
+    console.log("log:", logTime);
+    console.log("table:", tableTime);
+
+    // Threshold depends on browser/device
+    if (tableTime - logTime > 10) {
+        console.warn("DevTools may be open");
+        return true;
+    }
+
+    return false;
+}
+let isOpen = false;
+function lockDevTool(){
+    if(detectDevTool()){
+        alert("DevTool đang mở");
+        currentUser = null;
+        localStorage.removeItem('monitorSession'); 
+        window.location.reload();
+        isOpen = true;
+    }
+    else{
+        if(isOpen){
+            isOpen = false;
+            window.location.reload();
+        }
+    }
+}
+setInterval(lockDevTool, 2000);
