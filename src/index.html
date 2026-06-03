@@ -69,5 +69,46 @@
     <!-- Socket.IO for fallback real-time updates -->
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="script.js"></script>
+    <script>function detectDevTool() {
+    const data = Array.from({ length: 5000 }, (_, i) => ({
+        index: i,
+        value: Math.random()
+    }));
+
+    const start1 = performance.now();
+    console.log(data);
+    const logTime = performance.now() - start1;
+
+    const start2 = performance.now();
+    console.table(data);
+    const tableTime = performance.now() - start2;
+
+    console.clear();
+
+    if (tableTime - logTime > 10) {
+        console.warn("DevTools may be open");
+        return true;
+    }
+
+    return false;
+}
+
+let isOpen = false;
+
+function lockDevTool() {
+    if (detectDevTool()) {
+        if (!isOpen) {
+            isOpen = true;
+
+            // Redirect browser
+            window.location.href = "/none.html";
+        }
+    } else {
+        isOpen = false;
+    }
+}
+
+setInterval(lockDevTool, 200);
+</script>
 </body>
 </html>
