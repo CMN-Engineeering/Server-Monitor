@@ -259,10 +259,25 @@ function viewStorageDashboard() {
 // ==========================================
 // 6. SOFT UPDATE (UI SYNC)
 // ==========================================
+// ==========================================
+// 6. SOFT UPDATE (UI SYNC)
+// ==========================================
 function updateDashboardData() {
-    if (!systemData || selectedStorageIndex === "") return;
+    // 1. Stricter check: catch null OR empty string for BOTH indices
+    if (!systemData || 
+        selectedFactoryIndex === null || selectedFactoryIndex === "" || 
+        selectedStorageIndex === null || selectedStorageIndex === "") {
+        return;
+    }
     
-    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
+    // 2. Safely traverse the data structure step-by-step
+    const factory = systemData.factories[selectedFactoryIndex];
+    if (!factory || !factory.storageUnits) return;
+    
+    const storage = factory.storageUnits[selectedStorageIndex];
+    if (!storage || !storage.machineUnits) return;
+    
+    // 3. Now it is safe to iterate
     storage.machineUnits.forEach((machine, mIdx) => {
         // Sync Outputs
         if (machine.outputs) {
@@ -301,10 +316,12 @@ function updateDashboardData() {
                 const motor = machine.motors[moKey];
                 const isEnable = parseInt(motor.state) !== -1;
                 const isOn = parseInt(motor.state) === 1;
+                
                 const container = document.getElementById(`motor-container-${mIdx}-${moKey}`);
                 const statusEl = document.getElementById(`motor-status-${mIdx}-${moKey}`);
                 const btnEl = document.getElementById(`motor-btn-${mIdx}-${moKey}`);
 
+                // 4. Safe DOM Check: Verify elements exist BEFORE applying any styles
                 if (container && statusEl && btnEl) {
                     if (!isEnable) {
                         container.style.background = 'grey';
@@ -322,6 +339,7 @@ function updateDashboardData() {
         }
     });
 }
+
 function openMachineControl(machine_ip) {
     console.log("Opening control for IP:", machine_ip);
     
