@@ -880,13 +880,15 @@ window.editMachineDetails = function(machineIdx) {
         alert("Không có thay đổi nào được lưu.");
     }
 }
-function detectDevTool() {
+
+function detectDevTool(lockDiff) {
     const data = Array.from({ length: 5000 }, (_, i) => ({
         index: i,
         value: Math.random()
     }));
 
     const start1 = performance.now();
+    console
     const logTime = performance.now() - start1;
 
     const start2 = performance.now();
@@ -895,7 +897,7 @@ function detectDevTool() {
 
     console.clear();
 
-    if (tableTime - logTime > 10) {
+    if (tableTime - logTime > logDiff) {
         return true;
     }
 
