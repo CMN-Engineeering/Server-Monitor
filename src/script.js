@@ -305,13 +305,13 @@ function updateDashboardData() {
                 const statusEl = document.getElementById(`motor-status-${mIdx}-${moKey}`);
                 const btnEl = document.getElementById(`motor-btn-${mIdx}-${moKey}`);
 
-                if(!isEnable){
-                    container.style.background = 'grey';
-                    statusEl.innerText = `Trạng thái: Đã vô hiệu hóa`;
-                    btnEl.style.background = '#28a745';
-                    btnEl.innerText = 'Kích hoạt';
-                }else{
-                    if (container && statusEl && btnEl) {
+                if (container && statusEl && btnEl) {
+                    if (!isEnable) {
+                        container.style.background = 'grey';
+                        statusEl.innerText = `Trạng thái: Đã vô hiệu hóa`;
+                        btnEl.style.background = '#28a745';
+                        btnEl.innerText = 'Kích hoạt';
+                    } else {
                         container.style.background = isOn ? '#d4edda' : '#f8d7da';
                         statusEl.innerText = `Trạng thái: ${isOn ? '🟢 Đang chạy' : '🔴 Dừng'}`;
                         btnEl.style.background = isOn ? '#dc3545' : '#28a745';
