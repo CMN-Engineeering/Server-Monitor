@@ -91,7 +91,6 @@ async function saveSystemData() {
         if (!response.ok) {
             throw new Error('Failed to save data to server');
         }
-        console.log(systemData);
         console.log('✅ Dữ liệu đã được lưu thành công vào sys-data.json');
         
     } catch (error) {
@@ -224,17 +223,6 @@ function viewStorageDashboard() {
             const motorKeys = Object.keys(machine.motors).filter(k => k.startsWith('motor_'));
             motorKeys.forEach(moKey => {
                 const motor = machine.motors[moKey];
-                const disabled = parseInt(motor.state) === -1;
-                if(disabled){
-                    html += `
-                        <div id="motor-container-${mIdx}-${moKey}" class="motor-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isOn ? '#d4edda' : '#f8d7da'}; transition: background 0.3s;">
-                            <strong style="display:block; margin-bottom:5px;">${motor.name || moKey.replace('_', ' ').toUpperCase()}</strong>
-                            <p id="motor-status-${mIdx}-${moKey}" style="margin:5px 0;">Trạng thái: Đã vô hiệu hóa</p>
-                            <button id="motor-btn-${mIdx}-${moKey}" style="width:100%; background: grey; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;"onclick="toggleMotorState(${mIdx}, '${moKey}')">
-                                Kích hoạt
-                            </button>
-                        </div>`;
-                }
                 const isOn = parseInt(motor.state) === 1;
                 console.log(`mIdx : ${mIdx} - moKey : ${moKey}`)
                 html += `
@@ -259,25 +247,10 @@ function viewStorageDashboard() {
 // ==========================================
 // 6. SOFT UPDATE (UI SYNC)
 // ==========================================
-// ==========================================
-// 6. SOFT UPDATE (UI SYNC)
-// ==========================================
 function updateDashboardData() {
-    // 1. Stricter check: catch null OR empty string for BOTH indices
-    if (!systemData || 
-        selectedFactoryIndex === null || selectedFactoryIndex === "" || 
-        selectedStorageIndex === null || selectedStorageIndex === "") {
-        return;
-    }
+    if (!systemData || selectedStorageIndex === "") return;
     
-    // 2. Safely traverse the data structure step-by-step
-    const factory = systemData.factories[selectedFactoryIndex];
-    if (!factory || !factory.storageUnits) return;
-    
-    const storage = factory.storageUnits[selectedStorageIndex];
-    if (!storage || !storage.machineUnits) return;
-    
-    // 3. Now it is safe to iterate
+    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
     storage.machineUnits.forEach((machine, mIdx) => {
         // Sync Outputs
         if (machine.outputs) {
@@ -314,32 +287,21 @@ function updateDashboardData() {
             const motorKeys = Object.keys(machine.motors).filter(k => k.startsWith('motor_'));
             motorKeys.forEach(moKey => {
                 const motor = machine.motors[moKey];
-                const isEnable = parseInt(motor.state) !== -1;
                 const isOn = parseInt(motor.state) === 1;
-                
                 const container = document.getElementById(`motor-container-${mIdx}-${moKey}`);
                 const statusEl = document.getElementById(`motor-status-${mIdx}-${moKey}`);
                 const btnEl = document.getElementById(`motor-btn-${mIdx}-${moKey}`);
 
-                // 4. Safe DOM Check: Verify elements exist BEFORE applying any styles
                 if (container && statusEl && btnEl) {
-                    if (!isEnable) {
-                        container.style.background = 'grey';
-                        statusEl.innerText = `Trạng thái: Đã vô hiệu hóa`;
-                        btnEl.style.background = '#28a745';
-                        btnEl.innerText = 'Kích hoạt';
-                    } else {
-                        container.style.background = isOn ? '#d4edda' : '#f8d7da';
-                        statusEl.innerText = `Trạng thái: ${isOn ? '🟢 Đang chạy' : '🔴 Dừng'}`;
-                        btnEl.style.background = isOn ? '#dc3545' : '#28a745';
-                        btnEl.innerText = isOn ? 'Tắt' : 'Bật';
-                    }
+                    container.style.background = isOn ? '#d4edda' : '#f8d7da';
+                    statusEl.innerText = `Trạng thái: ${isOn ? '🟢 Đang chạy' : '🔴 Dừng'}`;
+                    btnEl.style.background = isOn ? '#dc3545' : '#28a745';
+                    btnEl.innerText = isOn ? 'Tắt' : 'Bật';
                 }
             });
         }
     });
 }
-
 function openMachineControl(machine_ip) {
     console.log("Opening control for IP:", machine_ip);
     
@@ -590,7 +552,6 @@ function updateMotorStatusBatch(factoryId, storageId, machineId, data) {
     // 3. Cập nhật trạng thái Motor 2
     if (data["Motor 2 State"] !== undefined) {
         if (!machine.motors.motor_2) machine.motors.motor_2 = { name: "Motor 2", state: 0 };
-        console.log(`Motor 2 State: ${parseInt(data["Motor 2 State"])}`)
         machine.motors.motor_2.state = parseInt(data["Motor 2 State"]);
     }
     
@@ -934,7 +895,7 @@ function detectDevTool() {
 
     console.clear();
 
-    if (tableTime - logTime >20) {
+    if (tableTime - logTime > 10) {
         return true;
     }
 
@@ -956,4 +917,4 @@ function lockDevTool() {
     }
 }
 
-// setInterval(lockDevTool, 200);
+setInterval(lockDevTool, 200);
