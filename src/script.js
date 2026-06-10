@@ -881,7 +881,7 @@ window.editMachineDetails = function(machineIdx) {
     }
 }
 
-function detectDevTool(lockDiff) {
+function detectDevTool(logDiff) {
     const data = Array.from({ length: 5000 }, (_, i) => ({
         index: i,
         value: Math.random()
@@ -907,7 +907,7 @@ function detectDevTool(lockDiff) {
 let isOpen = false;
 
 function lockDevTool() {
-    if (detectDevTool()) {
+    if (detectDevTool(20)) {
         if (!isOpen) {
             isOpen = true;
             logout(1);
@@ -919,4 +919,105 @@ function lockDevTool() {
     }
 }
 
-setInterval(lockDevTool, 200);
+// setInterval(lockDevTool, 200);
+// =========================================
+// XUẤT BÁO CÁO RA EXCEL
+// =========================================
+// =========================================
+// XUẤT BÁO CÁO RA EXCEL (SỬ DỤNG EXCELJS)
+// =========================================
+async function downloadReport() {
+    // 1. Lấy trực tiếp index từ thẻ Select trên giao diện để tránh sai lệch dữ liệu
+    const factorySelectDOM = document.getElementById('factory-select');
+    const storageSelectDOM = document.getElementById('storage-select');
+    
+    const fVal = factorySelectDOM ? factorySelectDOM.value : "";
+    const sVal = storageSelectDOM ? storageSelectDOM.value : "";
+
+    if (fVal === "" || sVal === "") {
+        alert("Vui lòng chọn Nhà máy và Kho trước khi tải báo cáo!");
+        return;
+    }
+
+    try {
+        // Chuyển string value sang kiểu số nguyên (Integer)
+        const fIndex = parseInt(fVal, 10);
+        const sIndex = parseInt(sVal, 10);
+
+        // --- Bắt đầu phần kiểm tra an toàn (Safe Checks) ---
+        if (!systemData || !systemData.factories) {
+            throw new Error("Dữ liệu hệ thống chưa sẵn sàng.");
+        }
+
+        const selectedFactory = systemData.factories[fIndex];
+        if (!selectedFactory) {
+            throw new Error(`Không tìm thấy dữ liệu nhà máy tại vị trí ${fIndex}`);
+        }
+
+        const selectedStorage = selectedFactory.storageUnits[sIndex];
+        if (!selectedStorage) {
+            throw new Error(`Không tìm thấy dữ liệu kho tại vị trí ${sIndex}`);
+        }
+        // --- Kết thúc kiểm tra an toàn ---
+
+        const machines = selectedStorage.machineUnits || [];
+
+        if (machines.length === 0) {
+            alert("Không có máy nào trong kho được chọn!");
+            return;
+        }
+
+        // 2. Fetch file mẫu từ server (format.xlsx)
+        const response = await fetch('format.xlsx');
+        if (!response.ok) {
+            throw new Error("Không thể tải file định dạng (format.xlsx). Hãy đảm bảo file này nằm đúng thư mục.");
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const today = new Intl.DateTimeFormat('fr-CA').format(new Date());
+        // 3. Khởi tạo Workbook của ExcelJS và load dữ liệu mẫu
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(arrayBuffer);
+
+        // Lấy worksheet đầu tiên (Sheet1)
+        const worksheet = workbook.getWorksheet(1); 
+
+        // 4. Ghi danh sách máy móc (Bắt đầu từ dòng 9)
+        let startRow = 9;
+
+        machines.forEach((machine, index) => {
+            const row = worksheet.getRow(startRow + index);
+            
+            // Cột 1 (A): STT
+            row.getCell(1).value = index + 1; 
+            row.getCell(2).value = machine.name || machine.id || `Máy ${index + 1}`; 
+            row.getCell(3).value = today; 
+            row.getCell(4).value = 5000; 
+            row.getCell(5).value = 5000; 
+            row.getCell(6).value = 50; 
+            row.commit(); 
+        });
+
+        // 5. Chuyển đổi thành Buffer và tải file xuống
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        
+        // Tạo link ảo để download
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Tên file linh động theo nhà máy và kho
+        a.download = `Bao_Cao_${selectedFactory.name}_${selectedStorage.name}.xlsx`.replace(/\s+/g, '_');
+        
+        document.body.appendChild(a);
+        a.click(); 
+        
+        // Dọn dẹp
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+        console.error("Lỗi xuất báo cáo:", error);
+        alert("Đã xảy ra lỗi trong quá trình tạo báo cáo:\n" + error.message);
+    }
+}

@@ -1,0 +1,135 @@
+[
+  {
+    "sheet_name": "SimpleSheet",
+    "sheet_styling": {
+      "pattern_type": "solid",
+      "fgColor": "ffffffff",
+      "bgColor": "FE0000",
+      "hAlign": "left",
+      "vAlign": "left"
+    },
+    "header_styling": {
+      "pattern_type": "solid",
+      "fgColor": "ffffffff",
+      "bgColor": "ffe4e2de",
+      "hAlign": "center",
+      "vAlign": "center",
+      "fBold": true
+    },
+    "columns_styling": [
+    ],
+    "rows": [
+      {
+        "row_styling": {
+          "pattern_type": "solid",
+          "fgColor": "ffffffff",
+          "bgColor": "ffe4e2de",
+          "hAlign": "center",
+          "vAlign": "center"
+        },
+        "cells": [
+
+        ]
+      },
+      {
+        "row_styling": {
+          "pattern_type": "solid",
+          "fgColor": "ffffffff",
+          "bgColor": "ffe4e2de"
+        },
+        "cells": [
+          {
+            "cell_value": "STT",
+            "cell_styling" : {
+              "borders": {
+                "all": {
+                  "style": "thick",
+                  "bColor": "00000000"
+                }
+              },
+          "hAlign": "center",
+          "vAlign": "center"
+            }
+          },
+          {
+            "cell_value": "Dây chuyền / Máy",
+            "cell_styling" : {
+              "borders": {
+                "all": {
+                  "style": "thick",
+                  "bColor": "00000000"
+                }
+              },
+          "hAlign": "center",
+          "vAlign": "center"
+            }
+          },
+          {
+            "cell_value": "Ca làm việc",
+            "cell_styling" : {
+              "borders": {
+                "all": {
+                  "style": "thick",
+                  "bColor": "00000000"
+                }
+              },
+          "hAlign": "center",
+          "vAlign": "center"
+            }
+          },
+          {
+            "cell_value": "Kế hoạch sản lượng",
+            "cell_styling" : {
+              "borders": {
+                "all": {
+                  "style": "thick",
+                  "bColor": "00000000"
+                }
+              },
+          "hAlign": "center",
+          "vAlign": "center"
+            }
+          },
+          {
+            "cell_value": "Sản lượng thực tế",
+            "cell_styling" : {
+              "borders": {
+                "all": {
+                  "style": "thick",
+                  "bColor": "00000000"
+                }
+              },
+          "hAlign": "center",
+          "vAlign": "center"
+            }
+          },
+          {
+            "cell_value": "Tỷ lệ hoàn thành (%)",
+            "cell_styling" : {
+              "borders": {
+                "all": {
+                  "style": "thick",
+                  "bColor": "00000000"
+                }
+              },
+          "hAlign": "center",
+          "vAlign": "center"
+            }
+          }
+        ]
+      },
+      {
+        "row_styling": {
+          "pattern_type": "solid",
+          "fgColor": "ffffffff",
+          "bgColor": "ffe4e2de",
+          "hAlign": "center",
+          "vAlign": "center"
+        },
+        "cells": [
+
+        ]
+      }
+    ]
+  }
+]
