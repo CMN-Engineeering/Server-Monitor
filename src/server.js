@@ -310,5 +310,5 @@ if (fs.existsSync('key.pem') && fs.existsSync('cert.pem')) {
 }
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Starting Server on port ${PORT}...`);
+  console.log(`🚀 Starting Server on port https://localhost:${PORT}...`);
 });

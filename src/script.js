@@ -926,6 +926,7 @@ function lockDevTool() {
 // =========================================
 // XUẤT BÁO CÁO RA EXCEL (SỬ DỤNG EXCELJS)
 // =========================================
+
 async function downloadReport() {
     // 1. Lấy trực tiếp index từ thẻ Select trên giao diện để tránh sai lệch dữ liệu
     const factorySelectDOM = document.getElementById('factory-select');
@@ -959,7 +960,9 @@ async function downloadReport() {
             throw new Error(`Không tìm thấy dữ liệu kho tại vị trí ${sIndex}`);
         }
         // --- Kết thúc kiểm tra an toàn ---
-
+        const factory_name = selectedFactory.name;
+        const warehouse_name = selectedStorage.name;
+        
         const machines = selectedStorage.machineUnits || [];
 
         if (machines.length === 0) {
@@ -972,15 +975,34 @@ async function downloadReport() {
         if (!response.ok) {
             throw new Error("Không thể tải file định dạng (format.xlsx). Hãy đảm bảo file này nằm đúng thư mục.");
         }
+        const reporter_name = prompt("Nhập tên người tạo báo cáo:","Nguyen Van A");
+        if (!reporter_name || reporter_name.trim() === "") return;
+        const production_code = prompt("Mã lệnh sản xuất:","PD-111222333");
+        if (!production_code || production_code.trim() === "") return;
+
+
         const arrayBuffer = await response.arrayBuffer();
-        const today = new Intl.DateTimeFormat('fr-CA').format(new Date());
+        const today = new Intl.DateTimeFormat(["ban", "id"]).format(new Date());
+        const month = today.split("/")[1];
+        const year = today.split("/")[2];
         // 3. Khởi tạo Workbook của ExcelJS và load dữ liệu mẫu
         const workbook = new ExcelJS.Workbook();
         await workbook.xlsx.load(arrayBuffer);
 
         // Lấy worksheet đầu tiên (Sheet1)
         const worksheet = workbook.getWorksheet(1); 
-
+        const factory_storage_cell = worksheet.getRow(4).getCell(3);
+        const reporter_name_cell = worksheet.getRow(6).getCell(3);
+        const report_period_cell = worksheet.getRow(5).getCell(3);
+        const production_code_cell = worksheet.getRow(5).getCell(6);
+        const report_time_cell = worksheet.getRow(4).getCell(6);
+        
+        factory_storage_cell.value = `${factory_name} - ${warehouse_name}`;
+        reporter_name_cell.value = reporter_name;
+        report_period_cell.value = `${month}/${year}`;
+        production_code_cell.value = production_code;
+        report_time_cell.value = (new Date()).toLocaleString();
+        
         // 4. Ghi danh sách máy móc (Bắt đầu từ dòng 9)
         let startRow = 9;
 
