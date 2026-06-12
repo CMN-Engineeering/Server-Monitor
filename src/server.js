@@ -212,6 +212,9 @@ function updateDataFromMqtt(topic, payload) {
            
             if (machine.outputs[output_id]) {
               machine.outputs[output_id].rpm = outputData.rpm;
+              if (outputData.status !== undefined) {
+                  machine.outputs[output_id].status = outputData.status;
+              }
               updated = true;
             }
           }

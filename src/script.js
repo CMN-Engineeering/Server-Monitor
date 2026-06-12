@@ -470,7 +470,7 @@ function subscribeToDataTopics() {
     
     // Add wildcard topics for flexibility
     const staticTopics = [
-        'system/data/update'
+        'supervisory'
     ];
     
     const allTopics = [...generatedTopics, ...staticTopics];
@@ -497,7 +497,11 @@ function handleMQTTMessage(topic, message) {
         if (typeof message === 'string' && message.startsWith('{')) {
             data = JSON.parse(message);
         }
-        
+        if (topic === 'supervisory') {
+            systemData = data;
+            updateDashboardData();
+            return;
+        }
         // Parse topic and update corresponding data
         const topicParts = topic.split('/');
         
