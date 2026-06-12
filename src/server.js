@@ -127,8 +127,8 @@ function writeToInfluxDB(topic, payload) {
 // ==========================================
 // MQTT SETUP & DATA BROADCASTING LOGIC
 // ==========================================
-
-const mqttClient = mqtt.connect('mqtt://localhost:1883', {
+const currentHost = window.location.hostname;
+const mqttClient = mqtt.connect(`mqtt://${currentHost}:2248`, {
   username: 'amt',
   password: 'amt123456'
 });
