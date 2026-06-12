@@ -57,7 +57,7 @@
                                 "output_1": {
                                     "name": "OUTPUT 1",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 },
                                 "output_2": {
                                     "name": "OUTPUT 2",
@@ -72,7 +72,7 @@
                                 "output_4": {
                                     "name": "OUTPUT 4",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 }
                             },
                             "motors": {
@@ -80,7 +80,7 @@
                                 "enabled": 1,
                                 "motor_1": {
                                     "name": "Motor 1",
-                                    "state": 1
+                                    "state": 0
                                 },
                                 "motor_2": {
                                     "name": "Motor 2",
