@@ -383,7 +383,8 @@ let mqttClient;
 
 function initializeMQTTConnection() {
     const clientId = 'monitor-client-' + Math.random().toString(36).substring(7);
-    const host = 'ws://localhost:9001/mqtt'; // Change to your MQTT broker address
+    const currentHost = window.location.hostname;
+    const host = `ws://${currentHost}:9001/mqtt`;
     
     const options = {
         keepalive: 60,
