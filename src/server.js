@@ -266,11 +266,12 @@ app.get('/toggleOutputState', (req, res) => {
  
   messageCount = messageCount + 1 < 1000000000 ? messageCount + 1 : 0;
   mqttClient.publish(publish_topic, JSON.stringify(payloadDict), { qos: 1 });
- 
   res.send("OK");
 });
 
 app.get('/toggleMotorState', (req, res) => {
+  console.log("Got /toggleMotorState")
+  console.log(req)
   const { factory_id, warehouse_id, machine_id, machine_type, motor_id, motor_state } = req.query;
  
   const motor_id_num = parseInt(motor_id.split("_")[1]);
@@ -286,7 +287,9 @@ app.get('/toggleMotorState', (req, res) => {
  
   messageCount = messageCount + 1 < 1000000000 ? messageCount + 1 : 0;
   mqttClient.publish(publish_topic, JSON.stringify(payloadDict), { qos: 1 });
- 
+  console.log(`Published to topic : ${publish_topic}`)
+  console.log(`Payload : ${JSON.stringify(payloadDict)}`)
+
   res.send("OK");
 });
 

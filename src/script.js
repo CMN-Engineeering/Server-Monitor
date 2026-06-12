@@ -327,24 +327,24 @@ function openMachineControl(machine_ip) {
 window.togglecomponent = function(machineIdx, convKey) {
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
     const factory_id = systemData.factories[selectedFactoryIndex].id;
-    const storage_id = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].id;
+    const warehouse_id = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].id;
     const machine_type = machine.type;
     const machine_id = machine.id;
     const component = machine.outputs[convKey];
     component.status = parseInt(component.status) === 1 ? 0 : 1;
-    fetch(`/toggleOutputState?factory_id=${factory_id}&storage_id=${storage_id}&machine_id=${machine_id}&machine_type=${machine_type}&output_id=${convKey}&output_state=${component.status}`)
+    fetch(`/toggleOutputState?factory_id=${factory_id}&warehouse_id=${warehouse_id}&machine_id=${machine_id}&machine_type=${machine_type}&output_id=${convKey}&output_state=${component.status}`)
     saveSystemData();
 }
 
 window.toggleMotorState = function(machineIdx, motorKey) {
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
     const factory_id = systemData.factories[selectedFactoryIndex].id;
-    const storage_id = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].id;
+    const warehouse_id = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].id;
     const machine_type = machine.type;
     const machine_id = machine.id;
     const motor = machine.motors[motorKey];
     motor.state = parseInt(motor.state) === 1 ? 0 : 1;
-    fetch(`/toggleMotorState?factory_id=${factory_id}&storage_id=${storage_id}&machine_id=${machine_id}&machine_type=${machine_type}&motor_id=${motorKey}&motor_state=${motor.state}`)
+    fetch(`/toggleMotorState?factory_id=${factory_id}&warehouse_id=${warehouse_id}&machine_id=${machine_id}&machine_type=${machine_type}&motor_id=${motorKey}&motor_state=${motor.state}`)
     saveSystemData();
 }
 
