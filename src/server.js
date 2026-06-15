@@ -12,11 +12,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 2. Top-level await works perfectly in ESM!
-const PUBLIC_IP = await publicIpv4();
-// const PUBLIC_IP = "113.22.167.238";
-console.log(`Public IP : ${PUBLIC_IP}`)
+// 2. Get the Server's Public IP once at startup
+const SERVER_PUBLIC_IP = await publicIpv4();
+console.log(`🌍 Server Public IP resolved: ${SERVER_PUBLIC_IP}`);
+
 const app = express();
+
+// Trust proxy (required if you are behind Nginx or Apache to get real IPs)
+app.set('trust proxy', true);
 
 // Middleware
 app.use(express.json());
@@ -26,9 +29,13 @@ const DATA_FILE = path.join(__dirname, 'sys-data.json');
 let messageCount = 0;
 
 // ==========================================
-// INFLUXDB SETUP
+// BACKEND INTERNAL CONNECTIONS
 // ==========================================
-const INFLUX_URL = process.env.INFLUX_URL || `http://${PUBLIC_IP}:8086`;
+// For backend services running on the same machine, localhost is safest.
+const LOCAL_IP = '127.0.0.1'; 
+
+// INFLUXDB SETUP
+const INFLUX_URL = process.env.INFLUX_URL || `http://${LOCAL_IP}:8086`;
 const INFLUX_TOKEN = process.env.INFLUX_TOKEN || '6cDudw35AmidCnSwv4wvRApiTYWaOir5hoctURjyaWO12I3bjQCNR461IpcprEaOiBxRynkBraNBuoGEFXqObA==';
 const INFLUX_ORG = process.env.INFLUX_ORG || 'CMN';
 const INFLUX_BUCKET = process.env.INFLUX_BUCKET || 'supervisory';
@@ -124,20 +131,20 @@ function writeToInfluxDB(topic, payload) {
 
   if (hasData) {
     writeApi.writePoint(point);
-    console.log(`💾 Saved metrics to InfluxDB for: ${f_id}/${s_id}/${m_type}/${m_id}`);
+    // console.log(`💾 Saved metrics to InfluxDB for: ${f_id}/${s_id}/${m_type}/${m_id}`);
   }
 }
 
 // ==========================================
 // MQTT SETUP & DATA BROADCASTING LOGIC
 // ==========================================
-const mqttClient = mqtt.connect(`mqtt://${PUBLIC_IP}:2248`, {
+const mqttClient = mqtt.connect(`mqtt://${LOCAL_IP}:2248`, {
   username: 'amt',
   password: 'amt123456'
 });
 
 mqttClient.on('connect', () => {
-  console.log('✅ Connected to MQTT Broker');
+  console.log('✅ Connected to MQTT Broker locally');
   mqttClient.subscribe('+/+/+/+/motor/status', (err) => {
     if (err) console.error('MQTT Subscription Error:', err);
   });
@@ -146,11 +153,8 @@ mqttClient.on('connect', () => {
 mqttClient.on('message', (topic, message) => {
   try {
     const payload = JSON.parse(message.toString());
-    console.log(`\n📥 [MQTT IN] Topic: ${topic}`);
-
     writeToInfluxDB(topic, payload);
     updateDataFromMqtt(topic, payload);
-
   } catch (err) {
     console.error(`❌ MQTT Parse Error:`, err.message);
   }
@@ -225,7 +229,6 @@ function updateDataFromMqtt(topic, payload) {
   if (updated) {
     writeData(sysData);
     mqttClient.publish('supervisory', JSON.stringify(sysData), { qos: 1 });
-    console.log(`✅ Data updated and broadcasted to UI for machine: ${m_id}`);
   }
 }
 
@@ -234,6 +237,21 @@ function updateDataFromMqtt(topic, payload) {
 // ==========================================
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// 📌 NEW: Dynamic IP Route based on client location
+app.get('/api/get-broker-ip', (req, res) => {
+  const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  
+  const isLocalhost = clientIp === '127.0.0.1' || 
+                      clientIp === '::1' || 
+                      clientIp === '::ffff:127.0.0.1';
+
+  // Return localhost if accessed locally, else return the public IP
+  const targetIp = isLocalhost ? "localhost" : SERVER_PUBLIC_IP;
+  
+  console.log(`📡 Requested Broker IP | Client IP: ${clientIp} | Sent: ${targetIp}`);
+  res.json({ targetIp: targetIp });
 });
 
 app.get('/api/load-data', (req, res) => {
@@ -268,8 +286,6 @@ app.get('/toggleOutputState', (req, res) => {
 });
 
 app.get('/toggleMotorState', (req, res) => {
-  console.log("Got /toggleMotorState");
-  console.log(req.query); // Changed this slightly to prevent a massive object log
   const { factory_id, warehouse_id, machine_id, machine_type, motor_id, motor_state } = req.query;
  
   const motor_id_num = parseInt(motor_id.split("_")[1]);
@@ -285,8 +301,6 @@ app.get('/toggleMotorState', (req, res) => {
  
   messageCount = messageCount + 1 < 1000000000 ? messageCount + 1 : 0;
   mqttClient.publish(publish_topic, JSON.stringify(payloadDict), { qos: 1 });
-  console.log(`Published to topic : ${publish_topic}`);
-  console.log(`Payload : ${JSON.stringify(payloadDict)}`);
 
   res.send("OK");
 });
@@ -310,5 +324,7 @@ if (fs.existsSync('key.pem') && fs.existsSync('cert.pem')) {
 }
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Starting Server on port https://${PUBLIC_IP}:${PORT}...`);
+  console.log(`🚀 Starting Server...`);
+  console.log(`🏠 Local Access:  http://localhost:${PORT}`);
+  console.log(`🌍 Public Access: http://${SERVER_PUBLIC_IP}:${PORT}`);
 });
