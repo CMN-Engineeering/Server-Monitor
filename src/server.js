@@ -1,11 +1,19 @@
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const https = require('https');
-const http = require('http');
-const mqtt = require('mqtt');
-const { InfluxDB, Point } = require('@influxdata/influxdb-client');
+import express from 'express';
+import fs from 'fs';
+import path from 'path';
+import https from 'https';
+import http from 'http';
+import mqtt from 'mqtt';
+import { InfluxDB, Point } from '@influxdata/influxdb-client';
+import { publicIpv4 } from 'public-ip';
+import { fileURLToPath } from 'url';
 
+// 1. Recreate __dirname (it doesn't exist by default in ES Modules)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// 2. Top-level await works perfectly in ESM!
+const PUBLIC_IP = await publicIpv4();
 const app = express();
 
 // Middleware
@@ -18,8 +26,7 @@ let messageCount = 0;
 // ==========================================
 // INFLUXDB SETUP
 // ==========================================
-// Update these values with your actual InfluxDB configuration
-const INFLUX_URL = process.env.INFLUX_URL || 'http://localhost:8086';
+const INFLUX_URL = process.env.INFLUX_URL || `http://${PUBLIC_IP}:8086`;
 const INFLUX_TOKEN = process.env.INFLUX_TOKEN || '6cDudw35AmidCnSwv4wvRApiTYWaOir5hoctURjyaWO12I3bjQCNR461IpcprEaOiBxRynkBraNBuoGEFXqObA==';
 const INFLUX_ORG = process.env.INFLUX_ORG || 'CMN';
 const INFLUX_BUCKET = process.env.INFLUX_BUCKET || 'supervisory';
@@ -41,7 +48,6 @@ process.on('SIGINT', async () => {
 // ==========================================
 // UTILITIES: READ/WRITE DATA
 // ==========================================
-
 const readData = () => {
   try {
     if (!fs.existsSync(DATA_FILE)) return { factories: [] };
@@ -63,9 +69,7 @@ const writeData = (data) => {
 // ==========================================
 // INFLUXDB WRITE HELPER
 // ==========================================
-
 function writeToInfluxDB(topic, payload) {
-  // Expected structure: ${factory_id}/${warehouse_id}/${machine_type}/${machine_id}/...
   const parts = topic.split('/');
   if (parts.length < 4) return;
 
@@ -74,13 +78,12 @@ function writeToInfluxDB(topic, payload) {
   const m_type = parts[2];
   const m_id = parts[3];
 
-  // Create a new data point
   const point = new Point('machine_telemetry')
     .tag('factory_id', f_id)
     .tag('warehouse_id', s_id)
     .tag('machine_type', m_type)
     .tag('machine_id', m_id)
-    .tag('full_path', `${f_id}/${s_id}/${m_type}/${m_id}`); // Optional combined path tag
+    .tag('full_path', `${f_id}/${s_id}/${m_type}/${m_id}`);
 
   let hasData = false;
 
@@ -117,7 +120,6 @@ function writeToInfluxDB(topic, payload) {
     }
   }
 
-  // Write to InfluxDB if fields exist
   if (hasData) {
     writeApi.writePoint(point);
     console.log(`💾 Saved metrics to InfluxDB for: ${f_id}/${s_id}/${m_type}/${m_id}`);
@@ -127,8 +129,7 @@ function writeToInfluxDB(topic, payload) {
 // ==========================================
 // MQTT SETUP & DATA BROADCASTING LOGIC
 // ==========================================
-const currentHost = window.location.hostname;
-const mqttClient = mqtt.connect(`mqtt://${currentHost}:2248`, {
+const mqttClient = mqtt.connect(`mqtt://${PUBLIC_IP}:1883`, {
   username: 'amt',
   password: 'amt123456'
 });
@@ -145,10 +146,7 @@ mqttClient.on('message', (topic, message) => {
     const payload = JSON.parse(message.toString());
     console.log(`\n📥 [MQTT IN] Topic: ${topic}`);
 
-    // Write telemetry data to InfluxDB
     writeToInfluxDB(topic, payload);
-
-    // Update local JSON and broadcast to UI
     updateDataFromMqtt(topic, payload);
 
   } catch (err) {
@@ -167,7 +165,6 @@ function updateDataFromMqtt(topic, payload) {
   let sysData = readData();
   let updated = false;
 
-  // Traverse structure matching the array format expected by the frontend
   const factory = (sysData.factories || []).find(f => f.id === f_id);
 
   if (factory) {
@@ -225,7 +222,6 @@ function updateDataFromMqtt(topic, payload) {
 
   if (updated) {
     writeData(sysData);
-    // Push the full JSON update to listening clients on WebSocket via MQTT
     mqttClient.publish('supervisory', JSON.stringify(sysData), { qos: 1 });
     console.log(`✅ Data updated and broadcasted to UI for machine: ${m_id}`);
   }
@@ -234,7 +230,6 @@ function updateDataFromMqtt(topic, payload) {
 // ==========================================
 // API ROUTES
 // ==========================================
-
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -243,12 +238,10 @@ app.get('/api/load-data', (req, res) => {
   res.json(readData());
 });
 
-// Endpoint invoked by saveSystemData()
 app.post('/api/save-data', (req, res) => {
   const newData = req.body;
   writeData(newData);
  
-  // Broadcast manual UI updates (e.g. Added Factory/Machine) so other connections sync
   mqttClient.publish('supervisory', JSON.stringify(newData), { qos: 0 });
   res.json({ success: true, message: "Saved successfully" });
 });
@@ -273,8 +266,8 @@ app.get('/toggleOutputState', (req, res) => {
 });
 
 app.get('/toggleMotorState', (req, res) => {
-  console.log("Got /toggleMotorState")
-  console.log(req)
+  console.log("Got /toggleMotorState");
+  console.log(req.query); // Changed this slightly to prevent a massive object log
   const { factory_id, warehouse_id, machine_id, machine_type, motor_id, motor_state } = req.query;
  
   const motor_id_num = parseInt(motor_id.split("_")[1]);
@@ -290,8 +283,8 @@ app.get('/toggleMotorState', (req, res) => {
  
   messageCount = messageCount + 1 < 1000000000 ? messageCount + 1 : 0;
   mqttClient.publish(publish_topic, JSON.stringify(payloadDict), { qos: 1 });
-  console.log(`Published to topic : ${publish_topic}`)
-  console.log(`Payload : ${JSON.stringify(payloadDict)}`)
+  console.log(`Published to topic : ${publish_topic}`);
+  console.log(`Payload : ${JSON.stringify(payloadDict)}`);
 
   res.send("OK");
 });
@@ -302,7 +295,6 @@ app.get('/toggleMotorState', (req, res) => {
 const PORT = process.env.PORT || 3000;
 let server;
 
-// Mimic server.py HTTPS configuration
 if (fs.existsSync('key.pem') && fs.existsSync('cert.pem')) {
   const options = {
     key: fs.readFileSync('key.pem'),
@@ -316,5 +308,5 @@ if (fs.existsSync('key.pem') && fs.existsSync('cert.pem')) {
 }
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Starting Server on port https://localhost:${PORT}...`);
+  console.log(`🚀 Starting Server on port https://${PUBLIC_IP}:${PORT}...`);
 });
