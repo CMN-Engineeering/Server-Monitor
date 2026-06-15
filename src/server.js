@@ -32,7 +32,7 @@ let messageCount = 0;
 // BACKEND INTERNAL CONNECTIONS
 // ==========================================
 // For backend services running on the same machine, localhost is safest.
-const LOCAL_IP = '127.0.0.1'; 
+const LOCAL_IP = '172.17.0.1'; 
 
 // INFLUXDB SETUP
 const INFLUX_URL = process.env.INFLUX_URL || `http://${LOCAL_IP}:8086`;

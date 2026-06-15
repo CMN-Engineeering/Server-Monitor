@@ -385,8 +385,7 @@ let mqttClient;
 
 function initializeMQTTConnection() {
     const clientId = 'monitor-client-' + Math.random().toString(36).substring(7);
-    const currentHost = window.location.hostname;
-    const host = `ws://${currentHost}:9001/mqtt`;
+    const host = `ws://172.17.0.1:9001/mqtt`;
     
     const options = {
         keepalive: 60,
