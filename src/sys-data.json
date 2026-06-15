@@ -44,7 +44,7 @@
                                 },
                                 "motor_2": {
                                     "name": "Motor 2",
-                                    "state": 0
+                                    "state": -1
                                 }
                             }
                         },

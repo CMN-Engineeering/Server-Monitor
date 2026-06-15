@@ -14,6 +14,8 @@ const __dirname = path.dirname(__filename);
 
 // 2. Top-level await works perfectly in ESM!
 const PUBLIC_IP = await publicIpv4();
+// const PUBLIC_IP = "113.22.167.238";
+console.log(`Public IP : ${PUBLIC_IP}`)
 const app = express();
 
 // Middleware
@@ -129,7 +131,7 @@ function writeToInfluxDB(topic, payload) {
 // ==========================================
 // MQTT SETUP & DATA BROADCASTING LOGIC
 // ==========================================
-const mqttClient = mqtt.connect(`mqtt://${PUBLIC_IP}:1883`, {
+const mqttClient = mqtt.connect(`mqtt://${PUBLIC_IP}:2248`, {
   username: 'amt',
   password: 'amt123456'
 });
