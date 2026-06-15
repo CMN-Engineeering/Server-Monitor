@@ -131,7 +131,7 @@ function writeToInfluxDB(topic, payload) {
 
   if (hasData) {
     writeApi.writePoint(point);
-    // console.log(`💾 Saved metrics to InfluxDB for: ${f_id}/${s_id}/${m_type}/${m_id}`);
+    console.log(`💾 Saved metrics to InfluxDB for: ${f_id}/${s_id}/${m_type}/${m_id}`);
   }
 }
 
@@ -262,7 +262,7 @@ app.post('/api/save-data', (req, res) => {
   const newData = req.body;
   writeData(newData);
  
-  mqttClient.publish('supervisory', JSON.stringify(newData), { qos: 0 });
+  mqttClient.publish('supervisory', JSON.stringify(newData), { qos: 1});
   res.json({ success: true, message: "Saved successfully" });
 });
 
@@ -281,6 +281,7 @@ app.get('/toggleOutputState', (req, res) => {
   };
  
   messageCount = messageCount + 1 < 1000000000 ? messageCount + 1 : 0;
+
   mqttClient.publish(publish_topic, JSON.stringify(payloadDict), { qos: 1 });
   res.send("OK");
 });

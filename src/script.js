@@ -334,6 +334,7 @@ window.togglecomponent = function(machineIdx, convKey) {
     component.status = parseInt(component.status) === 1 ? 0 : 1;
     fetch(`/toggleOutputState?factory_id=${factory_id}&warehouse_id=${warehouse_id}&machine_id=${machine_id}&machine_type=${machine_type}&output_id=${convKey}&output_state=${component.status}`)
     saveSystemData();
+    updateDashboardData();
 }
 
 window.toggleMotorState = function(machineIdx, motorKey) {
@@ -346,6 +347,7 @@ window.toggleMotorState = function(machineIdx, motorKey) {
     motor.state = parseInt(motor.state) === 1 ? 0 : 1;
     fetch(`/toggleMotorState?factory_id=${factory_id}&warehouse_id=${warehouse_id}&machine_id=${machine_id}&machine_type=${machine_type}&motor_id=${motorKey}&motor_state=${motor.state}`)
     saveSystemData();
+    updateDashboardData();
 }
 
 window.toggleMotorEnable = function(machineIdx) {
