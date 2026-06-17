@@ -987,12 +987,16 @@ async function generateReport() {
         if (!production_code || production_code.trim() === "") return;
         const shift_id = prompt("ID Phiên:","S-123");
         if (!shift_id || shift_id.trim() === "") return;
-        
+        const date = new Date().toLocaleString('vi-VN', {
+            timeZone: 'Asia/Ho_Chi_Minh'
+            });
         machines.forEach((machine, index) => {
             const machine_id = `${factory_name}/${warehouse_name}/${machine.name}`;
             fetch(`http://localhost:1880/report?machine_id=${machine_id}
                 &reporter_id=${reporter_id}
-                &production_code=${production_code}
+                &production_code=${production_code},
+                &checkin=${date}
+                &checkout=${date}
                 &amount=500
                 &shift_id=${shift_id}
                 &status=${parseInt(Math.random())}`)
@@ -1002,7 +1006,8 @@ async function generateReport() {
         console.error("Lỗi xuất báo cáo:", error);
         alert("Đã xảy ra lỗi trong quá trình tạo báo cáo:\n" + error.message);
     }
+    alert("Đang thêm Data vào GoogleSheet. Sẽ tự động mở khi hoàn thành");
     setTimeout(() => {
+        window.open("https://docs.google.com/spreadsheets/d/1nWi7gPbwO_FAe3IdmzI0q_OSIsJTcBx77wJ66yBZRiw/edit?gid=277851596#gid=277851596")
     }, 2000);
-    window.open("https://docs.google.com/spreadsheets/d/1nWi7gPbwO_FAe3IdmzI0q_OSIsJTcBx77wJ66yBZRiw/edit?gid=277851596#gid=277851596")
 }
