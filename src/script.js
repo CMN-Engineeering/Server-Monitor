@@ -1008,6 +1008,5 @@ async function generateReport() {
     }
     alert("Đang thêm Data vào GoogleSheet. Sẽ tự động mở khi hoàn thành");
     setTimeout(() => {
-        window.open("https://docs.google.com/spreadsheets/d/1nWi7gPbwO_FAe3IdmzI0q_OSIsJTcBx77wJ66yBZRiw/edit?gid=277851596#gid=277851596")
     }, 2000);
 }
