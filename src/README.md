@@ -1,107 +1,34 @@
 # Server Monitor Setup Guide
 
-## 1. Install Python Packages
+## 1. Build Docker
 
 Run:
 
 ```bash
-pip install flask flask-socketio paho-mqtt
-```
-or
-```bash
-pip install -r requirements.txt
+docker build -t pc_web .
+# Relace pc_web with any name you want
 ```
 ---
 
-## 2. Start MQTT Broker
-
-Example using Mosquitto:
+## 2. Run Docker
+Run:
 
 ```bash
-mosquitto
+docker run -d --restart unless-stopped -p 3000:3000 --name node_service -t pc_web 
 ```
+-d (Detached mode): This is what makes Docker run "silently." It starts the container in the background and leaves your terminal free.
 
-Or with config:
+-p 3000:3000: Maps port 3000 from the container (which you exposed in your Dockerfile) to port 3000 on your host machine.
 
+--restart unless-stopped: This ensures the container behaves like a persistent service. If your app crashes, or if you reboot your entire server, Docker will automatically start this container back up. It will only stay off if you manually type docker stop node_service.
+
+--name node_service: Gives the container a recognizable name so you can easily manage it later.
+
+## 3. Stop Docker
 ```bash
-mosquitto -c mosquitto.conf
+docker stop node_service
 ```
-
----
-
-## 3. Run Server
-
-Start the Flask server:
-
+To start it again
 ```bash
-python server.py
+docker start node_service
 ```
-
-Server runs at:
-
-```text
-https://localhost:3000
-```
-
----
-
-## 4. Open Web Dashboard
-
-Open browser:
-
-```text
-https://localhost:3000
-```
-
----
-
-## 5. Login Accounts
-
-### Admin
-
-```text
-Username: admin
-Password: admin
-```
-
-### Operator
-
-```text
-Username: operator
-Password: operator
-```
-
----
-
-## 6. Important
-
-In `index.html`, make sure Socket.IO loads BEFORE `script.js`:
-
-```html
-<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script src="script.js?v=2"></script>
-```
-
----
-
-## 7. MQTT Example Topic
-
-```text
-Factory_1/Warehouse_1/Tank_Conveyor/Machine_1
-```
-
----
-
-## 8. MQTT Example Payload
-
-```json
-{
-  "motor_status": {
-    "Enabled": 1,
-    "Motor 1 State": 1,
-    "Motor 2 State": 0
-  }
-}
-```
-
-Dashboard updates automatically in realtime.

@@ -933,7 +933,7 @@ function lockDevTool() {
 // XUẤT BÁO CÁO RA EXCEL (SỬ DỤNG EXCELJS)
 // =========================================
 
-async function downloadReport() {
+async function generateReport() {
     // 1. Lấy trực tiếp index từ thẻ Select trên giao diện để tránh sai lệch dữ liệu
     const factorySelectDOM = document.getElementById('factory-select');
     const storageSelectDOM = document.getElementById('storage-select');
@@ -981,71 +981,28 @@ async function downloadReport() {
         if (!response.ok) {
             throw new Error("Không thể tải file định dạng (format.xlsx). Hãy đảm bảo file này nằm đúng thư mục.");
         }
-        const reporter_name = prompt("Nhập tên người tạo báo cáo:","Nguyen Van A");
-        if (!reporter_name || reporter_name.trim() === "") return;
-        const production_code = prompt("Mã lệnh sản xuất:","PD-111222333");
+        const reporter_id = prompt("Nhập mã số người tạo báo cáo:",123);
+        if (!reporter_id || reporter_id.trim() === "") return;
+        const production_code = prompt("Mã công đoạn:","PD-111222333");
         if (!production_code || production_code.trim() === "") return;
-
-
-        const arrayBuffer = await response.arrayBuffer();
-        const today = new Intl.DateTimeFormat(["ban", "id"]).format(new Date());
-        const month = today.split("/")[1];
-        const year = today.split("/")[2];
-        // 3. Khởi tạo Workbook của ExcelJS và load dữ liệu mẫu
-        const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.load(arrayBuffer);
-
-        // Lấy worksheet đầu tiên (Sheet1)
-        const worksheet = workbook.getWorksheet(1); 
-        const factory_storage_cell = worksheet.getRow(4).getCell(3);
-        const reporter_name_cell = worksheet.getRow(6).getCell(3);
-        const report_period_cell = worksheet.getRow(5).getCell(3);
-        const production_code_cell = worksheet.getRow(5).getCell(6);
-        const report_time_cell = worksheet.getRow(4).getCell(6);
+        const shift_id = prompt("ID Phiên:","S-123");
+        if (!shift_id || shift_id.trim() === "") return;
         
-        factory_storage_cell.value = `${factory_name} - ${warehouse_name}`;
-        reporter_name_cell.value = reporter_name;
-        report_period_cell.value = `${month}/${year}`;
-        production_code_cell.value = production_code;
-        report_time_cell.value = (new Date()).toLocaleString();
-        
-        // 4. Ghi danh sách máy móc (Bắt đầu từ dòng 9)
-        let startRow = 9;
-
         machines.forEach((machine, index) => {
-            const row = worksheet.getRow(startRow + index);
-            
-            // Cột 1 (A): STT
-            row.getCell(1).value = index + 1; 
-            row.getCell(2).value = machine.name || machine.id || `Máy ${index + 1}`; 
-            row.getCell(3).value = today; 
-            row.getCell(4).value = 5000; 
-            row.getCell(5).value = 5000; 
-            row.getCell(6).value = 50; 
-            row.commit(); 
+            const machine_id = `${factory_name}/${warehouse_name}/${machine.name}`;
+            fetch(`http://localhost:1880/report?machine_id=${machine_id}
+                &reporter_id=${reporter_id}
+                &production_code=${production_code}
+                &amount=500
+                &shift_id=${shift_id}
+                &status=${parseInt(Math.random())}`)
         });
-
-        // 5. Chuyển đổi thành Buffer và tải file xuống
-        const buffer = await workbook.xlsx.writeBuffer();
-        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        
-        // Tạo link ảo để download
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        
-        // Tên file linh động theo nhà máy và kho
-        a.download = `Bao_Cao_${selectedFactory.name}_${selectedStorage.name}.xlsx`.replace(/\s+/g, '_');
-        
-        document.body.appendChild(a);
-        a.click(); 
-        
-        // Dọn dẹp
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
 
     } catch (error) {
         console.error("Lỗi xuất báo cáo:", error);
         alert("Đã xảy ra lỗi trong quá trình tạo báo cáo:\n" + error.message);
     }
+    setTimeout(() => {
+    }, 2000);
+    window.open("https://docs.google.com/spreadsheets/d/1nWi7gPbwO_FAe3IdmzI0q_OSIsJTcBx77wJ66yBZRiw/edit?gid=277851596#gid=277851596")
 }

@@ -17,13 +17,13 @@
             <div id="login-error" style="color: red; margin-top: 10px; display: none;">Sai tài khoản hoặc mật khẩu!</div>
         </div>
     </div>
-
+    
     <div id="app-content" style="display: none;">
         <div class="header" style="display: flex; justify-content: space-between; align-items: center;">
             <h1 style="margin: 0;">Server Monitor - Hệ thống Quản lý Máy</h1>
             <div class="user-info">
                 <span id="user-display" style="margin-right: 15px; font-weight: bold;"></span>
-                <button class="mgmt-btn delete" onclick="downloadReport()">Xuất báo cáo</button>
+                <button class="mgmt-btn delete" onclick="generateReport()">Xuất báo cáo</button>
                 <span id="user-display" style="margin-right: 15px; font-weight: bold;"></span>
                 <button class="mgmt-btn delete" onclick="logout(0)">Đăng xuất</button>
             </div>
@@ -68,6 +68,7 @@
             </div>
         </div>
     </div>
+    
 
     <!-- MQTT.js library for WebSocket connections -->
     <script src="https://cdn.jsdelivr.net/npm/mqtt@5.0.2/dist/mqtt.min.js"></script>
