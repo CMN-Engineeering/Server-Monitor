@@ -326,6 +326,6 @@ if (fs.existsSync('key.pem') && fs.existsSync('cert.pem')) {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Starting Server...`);
-  console.log(`🏠 Local Access:  http://localhost:${PORT}`);
-  console.log(`🌍 Public Access: http://${SERVER_PUBLIC_IP}:${PORT}`);
+  console.log(`🏠 Local Access:  https://localhost:${PORT}`);
+  console.log(`🌍 Public Access: https://${SERVER_PUBLIC_IP}:${PORT}`);
 });

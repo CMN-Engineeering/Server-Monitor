@@ -992,7 +992,7 @@ async function generateReport() {
             });
         machines.forEach((machine, index) => {
             const machine_id = `${factory_name}/${warehouse_name}/${machine.name}`;
-            fetch(`http://172.17.0.1:1880/report?machine_id=${machine_id}
+            fetch(`http://localhost:1880/report?machine_id=${machine_id}
                 &reporter_id=${reporter_id}
                 &production_code=${production_code},
                 &checkin=${date}
