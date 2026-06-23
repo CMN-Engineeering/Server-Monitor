@@ -17,12 +17,12 @@
                                 "output_1": {
                                     "name": "OUTPUT 1",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 },
                                 "output_2": {
                                     "name": "OUTPUT 2",
                                     "rpm": 0,
-                                    "status": 0
+                                    "status": 1
                                 },
                                 "output_3": {
                                     "name": "OUTPUT 3",
@@ -40,7 +40,7 @@
                                 "enabled": 1,
                                 "motor_1": {
                                     "name": "Motor 1",
-                                    "state": 0
+                                    "state": 1
                                 },
                                 "motor_2": {
                                     "name": "Motor 2",
