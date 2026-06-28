@@ -14,21 +14,18 @@ docker build -t pc_web .
 Run:
 
 ```bash
-docker run -d --restart unless-stopped -p 3000:3000 --name pc_web -t pc_web 
+docker run -d --restart unless-stopped -p 1224:1224 --name pc_web -t pc_web 
 ```
 -d (Detached mode): This is what makes Docker run "silently." It starts the container in the background and leaves your terminal free.
 
--p 3000:3000: Maps port 3000 from the container (which you exposed in your Dockerfile) to port 3000 on your host machine.
+-p 1224:1224: Maps port 1224 from the container (which you exposed in your Dockerfile) to port 1224 on your host machine.
 
 --restart unless-stopped: This ensures the container behaves like a persistent service. If your app crashes, or if you reboot your entire server, Docker will automatically start this container back up. It will only stay off if you manually type docker stop pc_web.
 
 --name pc_web: Gives the container a recognizable name so you can easily manage it later.
 
-## 3. Stop Docker
+## 3. Run node-red
 ```bash
-docker stop pc_web
+docker run -it -p 1880:1880 -v node_red_data:/data --name mynodered nodered/node-red
 ```
-To start it again
-```bash
-docker start pc_web
-```
+

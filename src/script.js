@@ -6,10 +6,12 @@ let currentUser = null;
 
 let selectedFactoryIndex = null;
 let selectedStorageIndex = null;
+let selectedTypeIndex = null;
 let selectedMachineIndex = null;
 
 const factorySelect = document.getElementById('factory-select');
 const storageSelect = document.getElementById('storage-select');
+const typeSelect = document.getElementById('type-select');
 const machineSelect = document.getElementById('machine-select');
 const detailsPanel = document.getElementById('details-panel');
 const detailsTitle = document.getElementById('details-title');
@@ -56,19 +58,13 @@ function logout(i) {
 // ==========================================
 // 3. TẢI VÀ LƯU DỮ LIỆU
 // ==========================================
-// Thay thế hàm loadSystemData hiện tại trong script.js
 async function loadSystemData() {
     try {
-        // Fetch từ API thay vì file tĩnh
         const response = await fetch('/api/load-data');
         if (!response.ok) throw new Error('Failed to load data');
-        
         systemData = await response.json();
-        
-        // Load lại danh sách nhà máy
         populateFactories();
         
-        // Tự động load kho và máy nếu đã có dữ liệu đang chọn
         if (selectedFactoryIndex !== null && selectedFactoryIndex !== "") {
             loadStorages();
         }
@@ -77,31 +73,22 @@ async function loadSystemData() {
     }
 }
 
-// Thay thế hàm saveSystemData hiện tại trong script.js
 async function saveSystemData() {
     try {
         const response = await fetch('/api/save-data', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(systemData)
         });
-        
-        if (!response.ok) {
-            throw new Error('Failed to save data to server');
-        }
-        console.log('✅ Dữ liệu đã được lưu thành công vào sys-data.json');
-        
+        if (!response.ok) throw new Error('Failed to save data to server');
     } catch (error) {
         console.error('❌ Lỗi khi lưu dữ liệu:', error);
-        // Fallback: Lưu vào local storage nếu server lỗi
         localStorage.setItem('monitorSystemData', JSON.stringify(systemData));
     }
 }
 
 // ==========================================
-// 4. ĐIỀU HƯỚNG DROPDOWN
+// 4. ĐIỀU HƯỚNG DROPDOWN CASCADE
 // ==========================================
 function populateFactories() {
     factorySelect.innerHTML = '<option value="">-- Chọn nhà máy --</option>';
@@ -115,13 +102,33 @@ function populateFactories() {
 
 function loadStorages() {
     storageSelect.innerHTML = '<option value="">-- Chọn kho --</option>';
+    typeSelect.innerHTML = '<option value="">-- Chọn loại máy --</option>';
     machineSelect.innerHTML = '<option value="">-- Chọn máy --</option>';
     selectedFactoryIndex = factorySelect.value;
+    selectedStorageIndex = "";
+    selectedTypeIndex = "";
+    selectedMachineIndex = "";
     
     if (selectedFactoryIndex !== "") {
         const factory = systemData.factories[selectedFactoryIndex];
-        factory.storageUnits.forEach((storage, index) => {
+        (factory.storageUnits || []).forEach((storage, index) => {
             storageSelect.add(new Option(storage.name, index));
+        });
+    }
+    viewStorageDashboard();
+}
+
+function loadTypes() {
+    typeSelect.innerHTML = '<option value="">-- Chọn loại máy --</option>';
+    machineSelect.innerHTML = '<option value="">-- Chọn máy --</option>';
+    selectedStorageIndex = storageSelect.value;
+    selectedTypeIndex = "";
+    selectedMachineIndex = "";
+
+    if (selectedStorageIndex !== "") {
+        const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
+        (storage.machine_types || []).forEach((typeObj, index) => {
+            typeSelect.add(new Option(typeObj.type, index));
         });
     }
     viewStorageDashboard();
@@ -129,11 +136,12 @@ function loadStorages() {
 
 function loadMachines() {
     machineSelect.innerHTML = '<option value="">-- Chọn máy --</option>';
-    selectedStorageIndex = storageSelect.value;
+    selectedTypeIndex = typeSelect.value;
+    selectedMachineIndex = "";
 
-    if (selectedStorageIndex !== "") {
-        const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
-        storage.machineUnits.forEach((machine, index) => {
+    if (selectedTypeIndex !== "") {
+        const typeObj = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex];
+        (typeObj.machineUnits || []).forEach((machine, index) => {
             machineSelect.add(new Option(machine.name, index));
         });
     }
@@ -146,99 +154,107 @@ function handleMachineSelection() {
 }
 
 // ==========================================
-// 5. DASHBOARD FULL RENDER
+// 5. DASHBOARD FULL RENDER (3 PARTS)
 // ==========================================
 function viewStorageDashboard() {
-    if (selectedFactoryIndex === "" || selectedStorageIndex === "") {
+    if (selectedFactoryIndex === "" || selectedStorageIndex === "" || selectedTypeIndex === "") {
         detailsContent.innerHTML = "";
-        detailsTitle.innerHTML = "Chọn Nhà máy và Kho để xem Dashboard";
+        detailsTitle.innerHTML = "Chọn Nhà máy, Kho và Loại Máy để xem Dashboard";
         return;
     }
     
-    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
+    const typeObj = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex];
     let machinesToRender = [];
     
     if (selectedMachineIndex !== "" && selectedMachineIndex !== null) {
-        machinesToRender.push({ machine: storage.machineUnits[selectedMachineIndex], originalIdx: parseInt(selectedMachineIndex) });
+        machinesToRender.push({ machine: typeObj.machineUnits[selectedMachineIndex], originalIdx: parseInt(selectedMachineIndex) });
     } else {
-        machinesToRender = storage.machineUnits.map((m, i) => ({ machine: m, originalIdx: i }));
+        machinesToRender = typeObj.machineUnits.map((m, i) => ({ machine: m, originalIdx: i }));
     }
     
-    detailsTitle.innerHTML = `Dashboard: ${storage.name} <span id="dashboard-time" style="font-size:0.6em; color:gray; float:right;">Cập nhật lúc: ${new Date().toLocaleTimeString()}</span>`;
+    detailsTitle.innerHTML = `Dashboard: ${typeObj.type} <span style="font-size:0.6em; color:gray; float:right;">Cập nhật lúc: ${new Date().toLocaleTimeString()}</span>`;
     
     let html = `<div class="machine-grid">`;
     machinesToRender.forEach((item) => {
         const machine = item.machine;
         const mIdx = item.originalIdx;
         
-        // Cập nhật thẻ h3 hiển thị thêm IP và đổi text nút bấm
         html += `
         <div class="machine-block" style="position: relative; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h3 style="margin-top:0; border-bottom: 1px solid #eee; padding-bottom:10px; padding-right: 120px;">
-                ${machine.name} <span style="font-size: 0.6em; color: gray; font-weight: normal;">(ID: ${machine.id} | IP: ${machine.ip || 'Trống'})</span>
-            </h3>
             
-            <button class="mgmt-btn" style="position: absolute; top: 12px; right: 130px; background-color: #ffc107; color: black; padding: 5px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" onclick="openMachineControl('${machine.ip}')">
-                OPEN MACHINE CONTROL
-            </button>
-            <button class="mgmt-btn admin-only" style="position: absolute; top: 12px; right: 15px; background-color: #ffc107; color: black; padding: 5px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;" onclick="editMachineDetails(${mIdx})">
-                Sửa ID / IP
-            </button>
+            <div style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
+                <h3 style="margin-top:0; margin-bottom: 10px;">Part 1: General Information</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.95em;">
+                    <div><strong>Name:</strong> ${machine.name || 'N/A'}</div>
+                    <div><strong>ID:</strong> ${machine.id || 'N/A'}</div>
+                    <div><strong>IP:</strong> ${machine.ip || 'N/A'}</div>
+                    <div><strong>PID:</strong> ${machine.pid || 'N/A'}</div>
+                    <div><strong>EID:</strong> ${machine.eid || 'N/A'}</div>
+                    <div><strong>MID:</strong> ${machine.mid || 'N/A'}</div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <button class="mgmt-btn" style="background-color: #ffc107; color: black;" onclick="openMachineControl('${machine.ip}')">Mở Control Máy</button>
+                    <button class="mgmt-btn admin-only" style="background-color: #ffc107; color: black;" onclick="editMachineDetails(${mIdx})">Sửa Thông Tin</button>
+                </div>
+            </div>
             
-            <h4 style="margin: 10px 0;">Outputs</h4>
-            <div class="component-mini-grid" style="display:flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">`;
+            <div style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
+                <h3 style="margin-top:0;">Part 2: Control Panel</h3>
+                
+                <h4 style="margin: 10px 0;">Outputs</h4>
+                <div class="component-mini-grid" style="display:flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">`;
         
         if (machine.outputs) {
             Object.entries(machine.outputs).forEach(([cKey, conv]) => {
-                console.log(`${mIdx}, '${cKey}'`);
                 const isRunning = parseInt(conv.status) === 1;
                 html += `
-                <div id="output-container-${mIdx}-${cKey}" class="conv-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isRunning ? '#d4edda' : '#f8d7da'}; transition: background 0.3s;">
+                <div id="output-container-${mIdx}-${cKey}" class="conv-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isRunning ? '#d4edda' : '#f8d7da'};">
                     <strong style="display:block; margin-bottom:5px;">${conv.name || cKey}</strong>
                     <p id="output-status-${mIdx}-${cKey}" style="margin:5px 0;">Trạng thái: ${isRunning ? '🟢 Đang chạy' : '🔴 Dừng'}</p>
                     <p style="margin:5px 0;">Tốc độ: <span id="output-rpm-${mIdx}-${cKey}" style="font-weight:bold;">${conv.rpm || 0}</span> RPM</p>
-                    <button id="output-btn-${mIdx}-${cKey}" style="width:100%; background:${isRunning ? '#dc3545' : '#28a745'}; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="togglecomponent(${mIdx}, '${cKey}')">
+                    <button id="output-btn-${mIdx}-${cKey}" style="width:100%; background:${isRunning ? '#dc3545' : '#28a745'}; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer;" onclick="togglecomponent(${mIdx}, '${cKey}')">
                         ${isRunning ? 'Tắt' : 'Bật'}
                     </button>
                 </div>`;
             });
         }
         
-        html += `</div>
-            
-            <h4 style="margin: 10px 0;">Động cơ (Motors)</h4>`;
+        html += `</div><h4 style="margin: 10px 0;">Motors</h4>`;
         
         if (machine.motors) {
             const isMotorsEnabled = machine.motors.enabled === true || parseInt(machine.motors.enabled) === 1;
-            
             html += `
             <div style="margin-bottom: 15px;">
-                <button id="motor-enable-btn-${mIdx}" style="background:${isMotorsEnabled ? '#6c757d' : '#007bff'}; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="toggleMotorEnable(${mIdx})">
-                    ${isMotorsEnabled ? 'Vô hiệu hóa toàn bộ Motors (Disable)' : 'Kích hoạt Motors (Enable)'}
+                <button id="motor-enable-btn-${mIdx}" style="background:${isMotorsEnabled ? '#6c757d' : '#007bff'}; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;" onclick="toggleMotorEnable(${mIdx})">
+                    ${isMotorsEnabled ? 'Vô hiệu hóa toàn bộ Motors' : 'Kích hoạt Motors'}
                 </button>
             </div>
-            
             <div id="motor-list-container-${mIdx}" class="component-mini-grid" style="display:${isMotorsEnabled ? 'flex' : 'none'}; gap: 15px; flex-wrap: wrap;">`;
 
             const motorKeys = Object.keys(machine.motors).filter(k => k.startsWith('motor_'));
             motorKeys.forEach(moKey => {
                 const motor = machine.motors[moKey];
                 const isOn = parseInt(motor.state) === 1;
-                console.log(`mIdx : ${mIdx} - moKey : ${moKey}`)
                 html += `
-                <div id="motor-container-${mIdx}-${moKey}" class="motor-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isOn ? '#d4edda' : '#f8d7da'}; transition: background 0.3s;">
-                    <strong style="display:block; margin-bottom:5px;">${motor.name || moKey.replace('_', ' ').toUpperCase()}</strong>
+                <div id="motor-container-${mIdx}-${moKey}" class="motor-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isOn ? '#d4edda' : '#f8d7da'};">
+                    <strong style="display:block; margin-bottom:5px;">${motor.name || moKey}</strong>
                     <p id="motor-status-${mIdx}-${moKey}" style="margin:5px 0;">Trạng thái: ${isOn ? '🟢 Đang chạy' : '🔴 Dừng'}</p>
-                    <button id="motor-btn-${mIdx}-${moKey}" style="width:100%; background:${isOn ? '#dc3545' : '#28a745'}; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer; font-weight:bold;" onclick="toggleMotorState(${mIdx}, '${moKey}')">
+                    <button id="motor-btn-${mIdx}-${moKey}" style="width:100%; background:${isOn ? '#dc3545' : '#28a745'}; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer;" onclick="toggleMotorState(${mIdx}, '${moKey}')">
                         ${isOn ? 'Tắt' : 'Bật'}
                     </button>
                 </div>`;
             });
-            
             html += `</div>`; 
         }
-
-        html += `</div>`; 
+        
+        html += `</div>
+            <div>
+                <h3 style="margin-top:0;">Part 3: Report Preview</h3>
+                <div style="min-height: 150px; background-color: #fafafa; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #888;">
+                    <i>Blank space reserved for future reports/charts integration.</i>
+                </div>
+            </div>
+        </div>`; 
     });
     html += `</div>`;
     detailsContent.innerHTML = html;
@@ -248,11 +264,10 @@ function viewStorageDashboard() {
 // 6. SOFT UPDATE (UI SYNC)
 // ==========================================
 function updateDashboardData() {
-    if (!systemData || selectedStorageIndex === "") return;
+    if (!systemData || selectedTypeIndex === "") return;
     
-    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
-    storage.machineUnits.forEach((machine, mIdx) => {
-        // Sync Outputs
+    const typeObj = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex];
+    typeObj.machineUnits.forEach((machine, mIdx) => {
         if (machine.outputs) {
             Object.entries(machine.outputs).forEach(([cKey, conv]) => {
                 const isRunning = parseInt(conv.status) === 1;
@@ -270,17 +285,14 @@ function updateDashboardData() {
                 }
             });
         }
-
-        // Sync Motors
         if (machine.motors) {
             const isMotorsEnabled = machine.motors.enabled === true || parseInt(machine.motors.enabled) === 1;
-            
             const enableBtnEl = document.getElementById(`motor-enable-btn-${mIdx}`);
             const motorListContainer = document.getElementById(`motor-list-container-${mIdx}`);
             
             if (enableBtnEl && motorListContainer) {
                 enableBtnEl.style.background = isMotorsEnabled ? '#6c757d' : '#007bff';
-                enableBtnEl.innerText = isMotorsEnabled ? 'Vô hiệu hóa toàn bộ Motors (Disable)' : 'Kích hoạt Motors (Enable)';
+                enableBtnEl.innerText = isMotorsEnabled ? 'Vô hiệu hóa toàn bộ Motors' : 'Kích hoạt Motors';
                 motorListContainer.style.display = isMotorsEnabled ? 'flex' : 'none';
             }
 
@@ -302,68 +314,50 @@ function updateDashboardData() {
         }
     });
 }
+
 function openMachineControl(machine_ip) {
-    console.log("Opening control for IP:", machine_ip);
-    
-    // 1. Check if the IP is empty or undefined
     if (!machine_ip || machine_ip.trim() === "") {
-        alert("Máy này chưa được cấu hình địa chỉ IP (IP đang trống)!");
-        return;
+        alert("Máy này chưa được cấu hình địa chỉ IP!"); return;
     }
-
     let url = machine_ip.trim();
-
-    // 2. Add http:// if the protocol is missing so the browser routes it externally
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        url = 'http://' + url;
-    }
-
-    // 3. Open in a new tab/window using '_blank'
+    if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'http://' + url;
     window.open(url, '_blank');
 }
+
 // ==========================================
 // 7. CÁC HÀM TƯƠNG TÁC (COMMANDS)
 // ==========================================
 window.togglecomponent = function(machineIdx, convKey) {
-    const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
+    const typeObj = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex];
+    const machine = typeObj.machineUnits[machineIdx];
     const factory_id = systemData.factories[selectedFactoryIndex].id;
     const warehouse_id = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].id;
-    const machine_type = machine.type;
-    const machine_id = machine.id;
+    
     const component = machine.outputs[convKey];
     component.status = parseInt(component.status) === 1 ? 0 : 1;
-    fetch(`/toggleOutputState?factory_id=${factory_id}&warehouse_id=${warehouse_id}&machine_id=${machine_id}&machine_type=${machine_type}&output_id=${convKey}&output_state=${component.status}`)
+    fetch(`/toggleOutputState?factory_id=${factory_id}&warehouse_id=${warehouse_id}&machine_id=${machine.id}&machine_type=${typeObj.type}&output_id=${convKey}&output_state=${component.status}`)
     saveSystemData();
     updateDashboardData();
 }
 
 window.toggleMotorState = function(machineIdx, motorKey) {
-    const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
+    const typeObj = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex];
+    const machine = typeObj.machineUnits[machineIdx];
     const factory_id = systemData.factories[selectedFactoryIndex].id;
     const warehouse_id = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].id;
-    const machine_type = machine.type;
-    const machine_id = machine.id;
+    
     const motor = machine.motors[motorKey];
     motor.state = parseInt(motor.state) === 1 ? 0 : 1;
-    fetch(`/toggleMotorState?factory_id=${factory_id}&warehouse_id=${warehouse_id}&machine_id=${machine_id}&machine_type=${machine_type}&motor_id=${motorKey}&motor_state=${motor.state}`)
+    fetch(`/toggleMotorState?factory_id=${factory_id}&warehouse_id=${warehouse_id}&machine_id=${machine.id}&machine_type=${typeObj.type}&motor_id=${motorKey}&motor_state=${motor.state}`)
     saveSystemData();
     updateDashboardData();
 }
 
 window.toggleMotorEnable = function(machineIdx) {
-    const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machineUnits[machineIdx];
-    
+    const typeObj = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex];
+    const machine = typeObj.machineUnits[machineIdx];
     if (machine.motors) {
-        const currentState = machine.motors.enabled;
-        let newState;
-        
-        if (typeof currentState === 'boolean') {
-            newState = !currentState;
-        } else {
-            newState = parseInt(currentState) === 1 ? 0 : 1;
-        }
-        
-        machine.motors.enabled = newState;
+        machine.motors.enabled = parseInt(machine.motors.enabled) === 1 ? 0 : 1;
         saveSystemData();
         viewStorageDashboard(); 
     }
@@ -372,262 +366,86 @@ window.toggleMotorEnable = function(machineIdx) {
 // ==========================================
 // 8. KHỞI ĐỘNG VÀ SOCKET / MQTT WEBSOCKET
 // ==========================================
-
-// Socket.IO connection (disabled - using MQTT WebSocket instead)
-// const socket = io();
-// socket.on('system-data-updated', (updatedData) => {
-//     systemData = updatedData;
-//     updateDashboardData();
-// });
-
-// MQTT WebSocket connection for real-time data updates
 let mqttClient;
-
 function initializeMQTTConnection() {
     const clientId = 'monitor-client-' + Math.random().toString(36).substring(7);
     const host = `ws://172.17.0.1:9001/mqtt`;
-    
-    const options = {
-        keepalive: 60,
-        username: 'amt',
-        password: 'amt123456',
-        clientId: clientId,
-        protocolId: 'MQTT',
-        protocolVersion: 4,
-        clean: true,
-        reconnectPeriod: 1000,
-        connectTimeout: 30 * 1000,
-    };
-    
-    mqttClient = mqtt.connect(host, options);
-    
-    mqttClient.on('error', (err) => {
-        console.error('MQTT Error:', err);
-    });
-    
-    mqttClient.on('reconnect', () => {
-        console.log('MQTT Reconnecting...');
+    mqttClient = mqtt.connect(host, {
+        keepalive: 60, username: 'amt', password: 'amt123456', clientId: clientId,
+        protocolId: 'MQTT', protocolVersion: 4, clean: true, reconnectPeriod: 1000
     });
     
     mqttClient.on('connect', () => {
-        console.log('MQTT Connected:', clientId);
-        // Subscribe to system data topics
         subscribeToDataTopics();
     });
-    
-    // Handle incoming messages
     mqttClient.on('message', (topic, message) => {
-        try {
-            const messageStr = message.toString();
-            console.log('MQTT Message from ' + topic + ':', messageStr);
-            handleMQTTMessage(topic, messageStr);
-        } catch (error) {
-            console.error('Error processing MQTT message:', error);
-        }
+        handleMQTTMessage(topic, message.toString());
     });
 }
 
 function generateTopicsFromData() {
     const topics = [];
-    
-    // Kiểm tra xem systemData.factories có tồn tại và là một mảng không
     if (!systemData || !Array.isArray(systemData.factories)) return topics;
     
-    // Duyệt qua mảng các nhà máy
     systemData.factories.forEach(factory => {
         if (!Array.isArray(factory.storageUnits)) return;
-        
-        // Duyệt qua mảng các kho trong nhà máy
         factory.storageUnits.forEach(storage => {
-            if (!Array.isArray(storage.machineUnits)) return;
-            
-            // Duyệt qua mảng các máy trong kho
-            storage.machineUnits.forEach(machine => {
-                // Đảm bảo machine type có giá trị, nếu trống thì để mặc định tránh lỗi undefined trên topic
-                const machineType = machine.type || "unknown_type";
-                
-                // Generate motor topics
-                topics.push(`${factory.id}/${storage.id}/${machineType}/${machine.id}/motor/status`);
-                
-                // Nếu sau này bạn cần subscribe riêng cho output, bạn có thể duyệt qua object machine.outputs:
-                // if (machine.outputs) {
-                //     Object.keys(machine.outputs).forEach(outputId => {
-                //         topics.push(`${factory.id}/${storage.id}/${machineType}/${machine.id}/${outputId}/status`);
-                //     });
-                // }
+            if (!Array.isArray(storage.machine_types)) return;
+            storage.machine_types.forEach(typeObj => {
+                if (!Array.isArray(typeObj.machineUnits)) return;
+                typeObj.machineUnits.forEach(machine => {
+                    topics.push(`${factory.id}/${storage.id}/${typeObj.type}/${machine.id}/motor/status`);
+                });
             });
         });
     });
-    
     return topics;
 }
+
 function subscribeToDataTopics() {
     if (!mqttClient) return;
-    
-    // Generate topics from system data
-    const generatedTopics = generateTopicsFromData();
-    for(let topic of generatedTopics) {
-        console.log('Generated topic to subscribe:', topic);
-    }
-    
-    // Add wildcard topics for flexibility
-    const staticTopics = [
-        'supervisory'
-    ];
-    
-    const allTopics = [...generatedTopics, ...staticTopics];
-    
-    allTopics.forEach(topic => {
-        mqttClient.subscribe(topic, { qos: 0 }, (err) => {
-            if (!err) {
-                console.log('Subscribed to topic:', topic);
-            } else {
-                console.error('Subscription error for topic ' + topic + ':', err);
-            }
-        });
-    });
-    
-    console.log('Total subscribed topics:', allTopics.length);
+    const allTopics = [...generateTopicsFromData(), 'supervisory'];
+    allTopics.forEach(topic => mqttClient.subscribe(topic, { qos: 0 }));
 }
 
 function handleMQTTMessage(topic, message) {
     if (!systemData) return;
-    
     try {
-        // Try parsing as JSON first
         let data = message;
-        if (typeof message === 'string' && message.startsWith('{')) {
-            data = JSON.parse(message);
-        }
+        if (typeof message === 'string' && message.startsWith('{')) data = JSON.parse(message);
         if (topic === 'supervisory') {
             systemData = data;
             updateDashboardData();
             return;
         }
-        // Parse topic and update corresponding data
-        const topicParts = topic.split('/');
         
-        // Handle output status updates: factory/{id}/storage/{id}/machine/{id}/output/{id}/status
+        const topicParts = topic.split('/');
         if (topic.includes('/motor/status')) {
-            const factoryId = topicParts[0];
-            const storageId = topicParts[1];
-            const machineId = topicParts[3];
-            
+            const fId = topicParts[0], sId = topicParts[1], typeId = topicParts[2], mId = topicParts[3];
             if (data && String(data["Control Mode"]) === "2") {
-                updateMotorStatusBatch(factoryId, storageId, machineId, data);
-                updateDashboardData(); // Cập nhật lại UI ngay lập tức
-                return; // Ngừng xử lý các logic bên dưới
+                updateMotorStatusBatch(fId, sId, typeId, mId, data);
+                updateDashboardData(); 
             }
         }
-                
-        updateDashboardData();
-    } catch (error) {
-        console.error('Error handling MQTT message:', error);
-    }
+    } catch (error) {}
 }
 
-function updateMotorStatusBatch(factoryId, storageId, machineId, data) {
+function updateMotorStatusBatch(fId, sId, typeId, mId, data) {
     if (!systemData || !systemData.factories) return;
+    const factory = systemData.factories.find(f => f.id === fId); if (!factory) return;
+    const storage = factory.storageUnits.find(s => s.id === sId); if (!storage) return;
+    const typeObj = (storage.machine_types || []).find(t => t.type === typeId); if (!typeObj) return;
+    const machine = typeObj.machineUnits.find(m => m.id === mId); if (!machine) return;
     
-    // Tìm Factory
-    const factory = systemData.factories.find(f => f.id === factoryId);
-    if (!factory) return;
-    
-    // Tìm Kho
-    const storage = factory.storageUnits.find(s => s.id === storageId);
-    if (!storage) return;
-    
-    // Tìm Máy
-    const machine = storage.machineUnits.find(m => m.id === machineId);
-    if (!machine) return;
-    
-    // Khởi tạo object motors nếu chưa có
     if (!machine.motors) machine.motors = {};
-    
-    // 1. Cập nhật trạng thái "Enabled" (Kích hoạt / Vô hiệu hóa toàn bộ)
-    if (data["Enabled"] !== undefined) {
-        machine.motors.enabled = parseInt(data["Enabled"]);
-    }
-    
-    // 2. Cập nhật trạng thái Motor 1
+    if (data["Enabled"] !== undefined) machine.motors.enabled = parseInt(data["Enabled"]);
     if (data["Motor 1 State"] !== undefined) {
         if (!machine.motors.motor_1) machine.motors.motor_1 = { name: "Motor 1", state: 0 };
         machine.motors.motor_1.state = parseInt(data["Motor 1 State"]);
     }
-    
-    // 3. Cập nhật trạng thái Motor 2
     if (data["Motor 2 State"] !== undefined) {
         if (!machine.motors.motor_2) machine.motors.motor_2 = { name: "Motor 2", state: 0 };
         machine.motors.motor_2.state = parseInt(data["Motor 2 State"]);
-    }
-    
-    console.log(`✅ Đã cập nhật UI trực tiếp cho ${machineId} từ Broker!`);
-}
-
-function updateOutputData(factoryId, storageId, machineId, outputId, data) {
-    if (!systemData || !systemData.factories) return;
-    
-    const factory = systemData.factories.find(f => f.id === factoryId);
-    if (!factory) return;
-    
-    const storage = factory.storageUnits.find(s => s.id === storageId);
-    if (!storage) return;
-    
-    const machine = storage.machineUnits.find(m => m.id === machineId);
-    if (!machine || !machine.outputs) return;
-    
-    const output = machine.outputs[outputId];
-    if (output) {
-        if (typeof data === 'object') {
-            Object.assign(output, data);
-        } else {
-            output.status = parseInt(data);
-        }
-    }
-}
-
-function updateMotorData(factoryId, storageId, machineId, motorId, data) {
-    if (!systemData || !systemData.factories) return;
-    
-    const factory = systemData.factories.find(f => f.id === factoryId);
-    if (!factory) return;
-    
-    const storage = factory.storageUnits.find(s => s.id === storageId);
-    if (!storage) return;
-    
-    const machine = storage.machineUnits.find(m => m.id === machineId);
-    if (!machine || !machine.motors) return;
-    
-    const motor = machine.motors[motorId];
-    if (motor) {
-        if (typeof data === 'object') {
-            Object.assign(motor, data);
-        } else {
-            motor.state = parseInt(data);
-        }
-    }
-}
-
-function updateMachineAllData(machineData) {
-    if (!systemData || !systemData.factories) return;
-    
-    // Find and update machine data by comparing IDs
-    for (let factory of systemData.factories) {
-        for (let storage of factory.storageUnits) {
-            for (let i = 0; i < storage.machineUnits.length; i++) {
-                if (storage.machineUnits[i].id === machineData.id) {
-                    // Update outputs
-                    if (machineData.outputs) {
-                        Object.assign(storage.machineUnits[i].outputs, machineData.outputs);
-                    }
-                    // Update motors
-                    if (machineData.motors) {
-                        Object.assign(storage.machineUnits[i].motors, machineData.motors);
-                    }
-                    return;
-                }
-            }
-        }
     }
 }
 
@@ -636,302 +454,129 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedSession) {
         currentUser = JSON.parse(savedSession);
         startApp();
-        // Initialize MQTT connection after app starts
-        setTimeout(() => {
-            initializeMQTTConnection();
-        }, 500);
+        setTimeout(initializeMQTTConnection, 500);
     } else {
         document.getElementById('login-screen').style.display = 'flex';
     }
 });
 
 // ==========================================
-// 9. QUẢN LÝ THÊM / XÓA / SỬA (ADMIN ONLY)
+// 9. QUẢN LÝ THÊM / XÓA / SỬA (CRUD)
 // ==========================================
-
 function checkAdminAccess() {
     if (!currentUser || currentUser.role !== 'admin') {
-        alert("Thao tác bị từ chối: Chỉ Administrator mới có quyền thực hiện!");
-        return false;
+        alert("Thao tác bị từ chối: Chỉ Administrator mới có quyền thực hiện!"); return false;
     }
     return true;
 }
 
-// --- QUẢN LÝ NHÀ MÁY (FACTORY) ---
-
 function addFactory() {
     if (!checkAdminAccess()) return;
-    
-    const factoryName = prompt("Nhập TÊN Nhà máy mới (Name):");
-    if (!factoryName || factoryName.trim() === "") return;
-
-    const factoryId = prompt("Nhập ID Nhà máy mới (ID - Không có khoảng trắng):", "Factory_X");
-    if (!factoryId || factoryId.trim() === "") return;
-
-    if (!systemData) systemData = { factories: [] };
+    const name = prompt("Nhập TÊN Nhà máy:"); if (!name) return;
+    const id = prompt("Nhập ID Nhà máy (Không khoảng trắng):"); if (!id) return;
     if (!systemData.factories) systemData.factories = [];
-    
-    systemData.factories.push({
-        id: factoryId.trim(),
-        name: factoryName.trim(),
-        storageUnits: []
-    });
-    
-    saveSystemData();
-    populateFactories();
+    systemData.factories.push({ id: id.trim(), name: name.trim(), storageUnits: [] });
+    saveSystemData(); populateFactories();
 }
 
 function deleteFactory() {
-    if (!checkAdminAccess()) return;
-    
-    if (selectedFactoryIndex === "" || selectedFactoryIndex === null) {
-        alert("Vui lòng chọn một nhà máy để xóa!");
-        return;
-    }
-    
-    const factory = systemData.factories[selectedFactoryIndex];
-    if (confirm(`Bạn có chắc chắn muốn xóa nhà máy "${factory.name}" và toàn bộ dữ liệu bên trong không?`)) {
+    if (!checkAdminAccess() || selectedFactoryIndex === "") return;
+    if (confirm("Xóa nhà máy này?")) {
         systemData.factories.splice(selectedFactoryIndex, 1);
-        selectedFactoryIndex = ""; 
-        
-        saveSystemData();
-        populateFactories();
-        loadStorages(); 
+        saveSystemData(); populateFactories(); loadStorages(); 
     }
 }
 
-// --- QUẢN LÝ KHO (STORAGE) ---
-
 function addStorage() {
-    if (!checkAdminAccess()) return;
-    
-    if (selectedFactoryIndex === "" || selectedFactoryIndex === null) {
-        alert("Vui lòng chọn một nhà máy trước khi thêm kho!");
-        return;
-    }
-
-    const storageName = prompt("Nhập TÊN Kho mới (Name):");
-    if (!storageName || storageName.trim() === "") return;
-
-    const storageId = prompt("Nhập ID Kho mới (ID - Không có khoảng trắng):", "Warehouse_X");
-    if (!storageId || storageId.trim() === "") return;
-
+    if (!checkAdminAccess() || selectedFactoryIndex === "") return;
+    const name = prompt("Nhập TÊN Kho:"); if (!name) return;
+    const id = prompt("Nhập ID Kho:"); if (!id) return;
     const factory = systemData.factories[selectedFactoryIndex];
     if (!factory.storageUnits) factory.storageUnits = [];
-    
-    factory.storageUnits.push({
-        id: storageId.trim(),
-        name: storageName.trim(),
-        machineUnits: []
-    });
-    
-    saveSystemData();
-    loadStorages();
-    storageSelect.value = factory.storageUnits.length - 1;
-    loadMachines(); 
+    factory.storageUnits.push({ id: id.trim(), name: name.trim(), machine_types: [] });
+    saveSystemData(); loadStorages();
 }
 
 function deleteStorage() {
-    if (!checkAdminAccess()) return;
-    
-    if (selectedFactoryIndex === "" || selectedStorageIndex === "" || selectedStorageIndex === null) {
-        alert("Vui lòng chọn một kho để xóa!");
-        return;
-    }
-
-    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
-    if (confirm(`Bạn có chắc chắn muốn xóa kho "${storage.name}" và các máy bên trong không?`)) {
+    if (!checkAdminAccess() || selectedStorageIndex === "") return;
+    if (confirm("Xóa kho này?")) {
         systemData.factories[selectedFactoryIndex].storageUnits.splice(selectedStorageIndex, 1);
-        selectedStorageIndex = ""; 
-        
-        saveSystemData();
-        loadStorages();
+        saveSystemData(); loadStorages();
     }
 }
 
-// --- QUẢN LÝ MÁY (MACHINE) ---
-
-function addMachine() {
-    if (!checkAdminAccess()) return;
+// CRUD MACHINE TYPES
+function addType() {
+    if (!checkAdminAccess() || selectedStorageIndex === "") return;
+    const typeName = prompt("Nhập loại máy (Type ID - không khoảng trắng, VD: Tank_Conveyor):");
+    if (!typeName || typeName.trim() === "") return;
     
-    if (selectedStorageIndex === "" || selectedStorageIndex === null) {
-        alert("Vui lòng chọn một kho trước khi thêm máy!");
-        return;
+    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
+    if (!storage.machine_types) storage.machine_types = [];
+    storage.machine_types.push({ type: typeName.trim(), machineUnits: [] });
+    
+    saveSystemData(); loadTypes();
+}
+
+function deleteType() {
+    if (!checkAdminAccess() || selectedTypeIndex === "") return;
+    if (confirm("Xóa loại máy này và tất cả máy con bên trong?")) {
+        systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types.splice(selectedTypeIndex, 1);
+        saveSystemData(); loadTypes();
     }
+}
 
-    const machineName = prompt("Nhập TÊN Máy mới (Name):", "Machine_New");
-    if (!machineName || machineName.trim() === "") return;
-
-    const machineId = prompt("Nhập ID Máy mới (ID):", "Machine_X");
-    if (!machineId || machineId.trim() === "") return;
-
-    const machineType = prompt("Nhập loại máy (Type):", "scsc");
-    const machineIp = prompt("Nhập địa chỉ IP máy:", "192.168.1.100");
-
-    const numOutputsStr = prompt("Nhập số lượng Outputs cho máy này (VD: 4):", "4");
-    const numOutputs = parseInt(numOutputsStr) || 0;
-
-    const numMotorsStr = prompt("Nhập số lượng Motors cho máy này (VD: 2):", "2");
-    const numMotors = parseInt(numMotorsStr) || 0;
+// CRUD MACHINES
+function addMachine() {
+    if (!checkAdminAccess() || selectedTypeIndex === "") return;
+    
+    const name = prompt("Nhập TÊN Máy mới:"); if (!name) return;
+    const id = prompt("Nhập ID Máy:"); if (!id) return;
+    const ip = prompt("Nhập địa chỉ IP máy:", "192.168.1.100");
+    const pid = prompt("Nhập PID:", "P001");
+    const eid = prompt("Nhập EID:", "E001");
+    const mid = prompt("Nhập MID:", "M001");
 
     let outputsObj = {};
-    for (let i = 1; i <= numOutputs; i++) {
-        outputsObj[`output_${i}`] = {
-            name: `OUTPUT ${i}`,
-            rpm: 0,
-            status: 0
-        };
-    }
+    for (let i = 1; i <= 4; i++) outputsObj[`output_${i}`] = { name: `OUTPUT ${i}`, rpm: 0, status: 0 };
+    let motorsObj = { enabled: 0 };
+    for (let i = 1; i <= 2; i++) motorsObj[`motor_${i}`] = { name: `Motor ${i}`, state: 0 };
 
-    let motorsObj = {
-        control_mode: 0,
-        enabled: 0
-    };
-    for (let i = 1; i <= numMotors; i++) {
-        motorsObj[`motor_${i}`] = {
-            name: `Motor ${i}`,
-            state: 0
-        };
-    }
-
-    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
-    if (!storage.machineUnits) storage.machineUnits = [];
+    const typeObj = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex];
+    if (!typeObj.machineUnits) typeObj.machineUnits = [];
     
-    storage.machineUnits.push({
-        id: machineId.trim(),
-        name: machineName.trim(),
-        type: machineType ? machineType.trim() : "",
-        ip: machineIp ? machineIp.trim() : "",
-        outputs: outputsObj,
-        motors: motorsObj
+    typeObj.machineUnits.push({
+        id: id.trim(), name: name.trim(), ip: ip ? ip.trim() : "",
+        pid: pid, eid: eid, mid: mid, outputs: outputsObj, motors: motorsObj
     });
     
-    
-    saveSystemData();
-    loadMachines();
+    saveSystemData(); loadMachines();
 }
 
 function deleteMachine() {
-    if (!checkAdminAccess()) return;
-    
-    if (selectedMachineIndex === "" || selectedMachineIndex === null) {
-        alert("Vui lòng chọn một máy cụ thể trong dropdown để xóa!");
-        return;
-    }
-
-    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
-    const machine = storage.machineUnits[selectedMachineIndex];
-    
-    if (confirm(`Bạn có chắc chắn muốn xóa máy "${machine.name}" không?`)) {
-        storage.machineUnits.splice(selectedMachineIndex, 1);
-        selectedMachineIndex = ""; 
-        
-        saveSystemData();
-        loadMachines();
+    if (!checkAdminAccess() || selectedMachineIndex === "") return;
+    const typeObj = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex];
+    if (confirm("Xóa máy này?")) {
+        typeObj.machineUnits.splice(selectedMachineIndex, 1);
+        saveSystemData(); loadMachines();
     }
 }
 
-// Cập nhật hàm Edit ID cũ thành Edit ID & IP với validation
 window.editMachineDetails = function(machineIdx) {
     if (!checkAdminAccess()) return;
+    const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex].machineUnits[machineIdx];
     
-    const storage = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex];
-    const machine = storage.machineUnits[machineIdx];
+    let newId = prompt("Sửa ID máy:", machine.id) || machine.id;
+    let newIp = prompt("Sửa IP máy:", machine.ip || "") || machine.ip;
+    let newPid = prompt("Sửa PID:", machine.pid || "") || machine.pid;
+    let newEid = prompt("Sửa EID:", machine.eid || "") || machine.eid;
+    let newMid = prompt("Sửa MID:", machine.mid || "") || machine.mid;
     
-    // --- 1. XỬ LÝ SỬA ID ---
-    let newId = prompt(`Sửa ID cho máy "${machine.name}":\n(ID hiện tại: ${machine.id})`, machine.id);
-    if (newId === null) return; // Hủy thao tác
-    newId = newId.trim();
-
-    if (newId !== "" && newId !== machine.id) {
-        // Kiểm tra xem ID mới có bị trùng với máy NÀO KHÁC trong cùng kho không
-        const isDuplicate = storage.machineUnits.some((m, idx) => m.id === newId && idx !== machineIdx);
-        if (isDuplicate) {
-            alert(`Lỗi: ID "${newId}" đã được sử dụng bởi một máy khác trong kho này. Vui lòng chọn ID khác!`);
-            return; 
-        }
-    } else {
-        newId = machine.id; // Nếu để trống hoặc không đổi thì giữ nguyên
-    }
-
-    // --- 2. XỬ LÝ SỬA IP ---
-    let currentIp = machine.ip || "";
-    let newIp = prompt(`Sửa IP cho máy "${machine.name}":\n(IP hiện tại: ${currentIp})`, currentIp);
-    if (newIp === null) return; // Hủy thao tác
-    newIp = newIp.trim();
-
-    if (newIp !== "" && newIp !== currentIp) {
-        // Kiểm tra định dạng IPv4 chuẩn (VD: 192.168.1.1)
-        const ipv4Regex = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-        
-        if (!ipv4Regex.test(newIp)) {
-            alert(`Lỗi: IP "${newIp}" không hợp lệ. Vui lòng nhập đúng định dạng IPv4 (Ví dụ: 192.168.1.100).`);
-            return;
-        }
-    } else {
-        newIp = currentIp; // Giữ nguyên nếu trống
-    }
-
-    // --- 3. LƯU THAY ĐỔI ---
-    if (newId !== machine.id || newIp !== currentIp) {
-        machine.id = newId;
-        machine.ip = newIp;
-        saveSystemData(); 
-        
-        alert(`Thành công!\nID: ${newId}\nIP: ${newIp}`);
-        saveSystemData();
-        loadMachines();
-        viewStorageDashboard(); // Render lại dashboard để thấy thay đổi
-    } else {
-        alert("Không có thay đổi nào được lưu.");
-    }
+    machine.id = newId; machine.ip = newIp;
+    machine.pid = newPid; machine.eid = newEid; machine.mid = newMid;
+    
+    saveSystemData(); loadMachines(); viewStorageDashboard();
 }
-
-function detectDevTool(logDiff) {
-    const data = Array.from({ length: 5000 }, (_, i) => ({
-        index: i,
-        value: Math.random()
-    }));
-
-    const start1 = performance.now();
-    console
-    const logTime = performance.now() - start1;
-
-    const start2 = performance.now();
-    console.table(data);
-    const tableTime = performance.now() - start2;
-
-    console.clear();
-
-    if (tableTime - logTime > logDiff) {
-        return true;
-    }
-
-    return false;
-}
-
-let isOpen = false;
-
-function lockDevTool() {
-    if (detectDevTool(20)) {
-        if (!isOpen) {
-            isOpen = true;
-            logout(1);
-            // Redirect browser
-            window.location.href = "/none.html";
-        }
-    } else {
-        isOpen = false;
-    }
-}
-
-// setInterval(lockDevTool, 200);
-// =========================================
-// XUẤT BÁO CÁO RA EXCEL
-// =========================================
-// =========================================
-// XUẤT BÁO CÁO RA EXCEL (SỬ DỤNG EXCELJS)
-// =========================================
 
 async function openReport() {
     window.open("https://docs.google.com/spreadsheets/d/1nWi7gPbwO_FAe3IdmzI0q_OSIsJTcBx77wJ66yBZRiw/edit?gid=277851596#gid=277851596")

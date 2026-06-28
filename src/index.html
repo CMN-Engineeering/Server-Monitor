@@ -25,14 +25,12 @@
             <div class="user-info">
                 <span id="user-display" style="margin-right: 15px; font-weight: bold;"></span>
                 <button class="mgmt-btn delete" onclick="openReport()">Mở báo cáo</button>
-                <span id="user-display" style="margin-right: 15px; font-weight: bold;"></span>
                 <button class="mgmt-btn delete" onclick="logout(0)">Đăng xuất</button>
             </div>
-            
         </div>
         
-        
         <div class="management-bar">
+            <div class="selector-group">
                 <label>Nhà máy:</label>
                 <select id="factory-select" onchange="loadStorages()">
                     <option value="">-- Chọn nhà máy --</option>
@@ -43,11 +41,20 @@
             
             <div class="selector-group">
                 <label>Kho:</label>
-                <select id="storage-select" onchange="loadMachines()">
+                <select id="storage-select" onchange="loadTypes()">
                     <option value="">-- Chọn kho --</option>
                 </select>
                 <button class="mgmt-btn admin-only" onclick="addStorage()">+ Thêm</button>
                 <button class="mgmt-btn delete admin-only" onclick="deleteStorage()">- Xóa</button>
+            </div>
+
+            <div class="selector-group">
+                <label>Loại Máy:</label>
+                <select id="type-select" onchange="loadMachines()">
+                    <option value="">-- Chọn loại máy --</option>
+                </select>
+                <button class="mgmt-btn admin-only" onclick="addType()">+ Thêm</button>
+                <button class="mgmt-btn delete admin-only" onclick="deleteType()">- Xóa</button>
             </div>
 
             <div class="selector-group">
@@ -62,18 +69,14 @@
 
         <div class="content">
             <div class="details-panel" id="details-panel">
-                <h2 id="details-title">Chọn Nhà máy và Kho để xem Dashboard</h2>
+                <h2 id="details-title">Chọn Nhà máy, Kho và Loại Máy để xem Dashboard</h2>
                 <div id="details-content"></div>
             </div>
         </div>
     </div>
     
-
-    <!-- MQTT.js library for WebSocket connections -->
     <script src="https://cdn.jsdelivr.net/npm/mqtt@5.0.2/dist/mqtt.min.js"></script>
-    <!-- Socket.IO for fallback real-time updates -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
