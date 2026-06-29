@@ -156,6 +156,9 @@ function handleMachineSelection() {
 // ==========================================
 // 5. DASHBOARD FULL RENDER (3 PARTS)
 // ==========================================
+function openPage(url){
+    window.open(url, '_blank');
+}
 function viewStorageDashboard() {
     if (selectedFactoryIndex === "" || selectedStorageIndex === "" || selectedTypeIndex === "") {
         detailsContent.innerHTML = "";
@@ -181,45 +184,55 @@ function viewStorageDashboard() {
         
         html += `
         <div class="machine-block" style="position: relative; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            
-            <div style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
-                <h3 style="margin-top:0; margin-bottom: 10px;">Part 1: General Information</h3>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; font-size: 0.95em;">
-                    <div><strong>Name:</strong> ${machine.name || 'N/A'}</div>
-                    <div><strong>ID:</strong> ${machine.id || 'N/A'}</div>
-                    <div><strong>IP:</strong> ${machine.ip || 'N/A'}</div>
-                    <div><strong>PID:</strong> ${machine.pid || 'N/A'}</div>
-                    <div><strong>EID:</strong> ${machine.eid || 'N/A'}</div>
-                    <div><strong>MID:</strong> ${machine.mid || 'N/A'}</div>
+            <div style="display:flex;justify-content: space-between;flex-direction:row">
+                <div style="display:block">
+                        <h3 style="margin-top:0; margin-bottom: 10px;">General Information</h3>
+                        <div><strong>Name:</strong> ${machine.name || 'N/A'}</div>
+                        <div><strong>ID:</strong> ${machine.id || 'N/A'}</div>
+                        <div><strong>IP:</strong> ${machine.ip || 'N/A'}</div>
+                        <div><strong>PID:</strong> ${machine.pid || 'N/A'}</div>
+                        <div><strong>EID:</strong> ${machine.eid || 'N/A'}</div>
+                        <div><strong>MID:</strong> ${machine.mid || 'N/A'}</div>
+                        <div><strong>CF:</strong> ${machine.cf || 'N/A'}</div>
+                        <div>
+                    </div>
+                    <div style="margin-top: 10px;display:flex;flex-direction:column;height:100px;justify-content: space-evenly;">
+                        <button class="mgmt-btn" style="background-color: #ffc107; color: black;cursor:pointer" onclick="openMachineControl('${machine.ip}')">Mở Control Máy</button>
+                        <button class="mgmt-btn" style="background-color: #ffc107; color: black;cursor:pointer" onclick="openPage('${machine.sheet_link}')">Mở Sheet Báo Cáo</button>
+                        <button class="mgmt-btn" style="background-color: #ffc107; color: black;cursor:pointer" onclick="openPage('${machine.looker_link}')">Mở Đồ Thị Báo Cáo</button>
+                        <button class="mgmt-btn admin-only" style="background-color: #ffc107; color: black;cursor:pointer" onclick="editMachineDetails(${mIdx})">Sửa Thông Tin</button>
+                    </div>
                 </div>
-                <div style="margin-top: 10px;">
-                    <button class="mgmt-btn" style="background-color: #ffc107; color: black;" onclick="openMachineControl('${machine.ip}')">Mở Control Máy</button>
-                    <button class="mgmt-btn admin-only" style="background-color: #ffc107; color: black;" onclick="editMachineDetails(${mIdx})">Sửa Thông Tin</button>
+                <div id="amount-card" style="display: flex;align-items: center;justify-content: flex-start;flex-direction: column;">
+                    <h3 style="margin-top:0; margin-bottom: 10px;">Amount</h3>
+                    <div style = "background: #97c4f55e;width: 200px;height: max-content;display: flex;align-items: center;justify-content: center;padding: 15px;margin: 10px;border-radius: 15px;">
+                        <strong style="display:block; margin-bottom:5px;">QRAW : ${machine.qraw}</strong>
+                    </div>
+                    <div style = "background: #97c4f55e;width: 200px;height: max-content;display: flex;align-items: center;justify-content: center;padding: 15px;margin: 10px;border-radius: 15px;">
+                        <strong style="display:block; margin-bottom:5px;">QFINAL : ${machine.qfinal}</strong>
+                    </div>
                 </div>
-            </div>
             
-            <div style="border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 15px;">
-                <h3 style="margin-top:0;">Part 2: Control Panel</h3>
+            <div id="motor-control-card" style="display:flex;justify-content:center;flex-direction: column;">
                 
-                <h4 style="margin: 10px 0;">Outputs</h4>
-                <div class="component-mini-grid" style="display:flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">`;
+                <!--<h4 style="margin: 10px 0;">Outputs</h4>
+                <div class="component-mini-grid" style="display:flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">-->`;
         
-        if (machine.outputs) {
-            Object.entries(machine.outputs).forEach(([cKey, conv]) => {
-                const isRunning = parseInt(conv.status) === 1;
-                html += `
-                <div id="output-container-${mIdx}-${cKey}" class="conv-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isRunning ? '#d4edda' : '#f8d7da'};">
-                    <strong style="display:block; margin-bottom:5px;">${conv.name || cKey}</strong>
-                    <p id="output-status-${mIdx}-${cKey}" style="margin:5px 0;">Trạng thái: ${isRunning ? '🟢 Đang chạy' : '🔴 Dừng'}</p>
-                    <p style="margin:5px 0;">Tốc độ: <span id="output-rpm-${mIdx}-${cKey}" style="font-weight:bold;">${conv.rpm || 0}</span> RPM</p>
-                    <button id="output-btn-${mIdx}-${cKey}" style="width:100%; background:${isRunning ? '#dc3545' : '#28a745'}; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer;" onclick="togglecomponent(${mIdx}, '${cKey}')">
-                        ${isRunning ? 'Tắt' : 'Bật'}
-                    </button>
-                </div>`;
-            });
-        }
+        // if (machine.outputs) {
+        //     Object.entries(machine.outputs).forEach(([cKey, conv]) => {
+        //         const isRunning = parseInt(conv.status) === 1;
+        //         html += `
+        //         <div id="output-container-${mIdx}-${cKey}" class="conv-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isRunning ? '#d4edda' : '#f8d7da'};">
+        //             <strong style="display:block; margin-bottom:5px;">${conv.name || cKey}</strong>
+        //             <p id="output-status-${mIdx}-${cKey}" style="margin:5px 0;">Trạng thái: ${isRunning ? '🟢 Đang chạy' : '🔴 Dừng'}</p>
+        //             <p style="margin:5px 0;">Tốc độ: <span id="output-rpm-${mIdx}-${cKey}" style="font-weight:bold;">${conv.rpm || 0}</span> RPM</p>
+        //             <button id="output-btn-${mIdx}-${cKey}" style="width:100%; background:${isRunning ? '#dc3545' : '#28a745'}; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer;" onclick="togglecomponent(${mIdx}, '${cKey}')">
+        //                 ${isRunning ? 'Tắt' : 'Bật'}
+        //             </button>
+        //         </div>`;
+        //     });
+        // }
         
-        html += `</div><h4 style="margin: 10px 0;">Motors</h4>`;
         
         if (machine.motors) {
             const isMotorsEnabled = machine.motors.enabled === true || parseInt(machine.motors.enabled) === 1;
@@ -229,7 +242,7 @@ function viewStorageDashboard() {
                     ${isMotorsEnabled ? 'Vô hiệu hóa toàn bộ Motors' : 'Kích hoạt Motors'}
                 </button>
             </div>
-            <div id="motor-list-container-${mIdx}" class="component-mini-grid" style="display:${isMotorsEnabled ? 'flex' : 'none'}; gap: 15px; flex-wrap: wrap;">`;
+            <div id="motor-list-container-${mIdx}" class="component-mini-grid" style="display:${isMotorsEnabled ? 'flex' : 'none'}; gap: 15px; flex-wrap: wrap;flex-direction: column;">`;
 
             const motorKeys = Object.keys(machine.motors).filter(k => k.startsWith('motor_'));
             motorKeys.forEach(moKey => {
@@ -244,17 +257,8 @@ function viewStorageDashboard() {
                     </button>
                 </div>`;
             });
-            html += `</div>`; 
+            html += `</div></div></div></div>`; 
         }
-        
-        html += `</div>
-            <div>
-                <h3 style="margin-top:0;">Part 3: Report Preview</h3>
-                <div style="min-height: 150px; background-color: #fafafa; border: 2px dashed #ccc; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #888;">
-                    <i>Blank space reserved for future reports/charts integration.</i>
-                </div>
-            </div>
-        </div>`; 
     });
     html += `</div>`;
     detailsContent.innerHTML = html;
@@ -530,24 +534,28 @@ function deleteType() {
 function addMachine() {
     if (!checkAdminAccess() || selectedTypeIndex === "") return;
     
-    const name = prompt("Nhập TÊN Máy mới:"); if (!name) return;
-    const id = prompt("Nhập ID Máy:"); if (!id) return;
+    const name = prompt("Nhập TÊN Máy mới:","Machine_X"); if (!name) return;
+    const id = prompt("Nhập ID Máy:","Machine_X"); if (!id) return;
     const ip = prompt("Nhập địa chỉ IP máy:", "192.168.1.100");
     const pid = prompt("Nhập PID:", "P001");
     const eid = prompt("Nhập EID:", "E001");
     const mid = prompt("Nhập MID:", "M001");
+    const motor_num = parseInt(prompt("Nhập số Motor:", 4));
+    const sheet_link = prompt("Nhập link Google Sheet báo cáo (nếu có):");
+    const looker_link = prompt("Nhập link Looker báo cáo (nếu có):");
 
     let outputsObj = {};
     for (let i = 1; i <= 4; i++) outputsObj[`output_${i}`] = { name: `OUTPUT ${i}`, rpm: 0, status: 0 };
     let motorsObj = { enabled: 0 };
-    for (let i = 1; i <= 2; i++) motorsObj[`motor_${i}`] = { name: `Motor ${i}`, state: 0 };
+    for (let i = 1; i <= motor_num; i++) motorsObj[`motor_${i}`] = { name: `Motor ${i}`, state: 0 };
 
     const typeObj = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex];
     if (!typeObj.machineUnits) typeObj.machineUnits = [];
     
     typeObj.machineUnits.push({
-        id: id.trim(), name: name.trim(), ip: ip ? ip.trim() : "",
-        pid: pid, eid: eid, mid: mid, outputs: outputsObj, motors: motorsObj
+        id: id.trim(), name: name.trim(), ip: ip ? ip.trim() : "", cf: 0, qraw: 0, qfinal: 0,
+        pid: pid, eid: eid, mid: mid, outputs: outputsObj, motors: motorsObj,
+        sheet_link: sheet_link, looker_link: looker_link
     });
     
     saveSystemData(); loadMachines();
@@ -571,9 +579,12 @@ window.editMachineDetails = function(machineIdx) {
     let newPid = prompt("Sửa PID:", machine.pid || "") || machine.pid;
     let newEid = prompt("Sửa EID:", machine.eid || "") || machine.eid;
     let newMid = prompt("Sửa MID:", machine.mid || "") || machine.mid;
+    let newSheet = prompt("Sửa Link Gooogle Sheet:", machine.sheet_link || "") || machine.sheet_link;
+    let newDashboard = prompt("Sửa Link Looker:", machine.looker_link || "") || machine.looker_link;
     
     machine.id = newId; machine.ip = newIp;
     machine.pid = newPid; machine.eid = newEid; machine.mid = newMid;
+    machine.sheet_link = newSheet; machine.looker_link = newDashboard;
     
     saveSystemData(); loadMachines(); viewStorageDashboard();
 }

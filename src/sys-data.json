@@ -16,19 +16,20 @@
                             "type": "May_Chan",
                             "machineUnits": [
                                 {
-                                    "id": "Machine_1",
-                                    "name": "Machine_1",
-                                    "ip": "192.168.1.82",
-                                    "pid": "P12345",
-                                    "eid": "E12345",
-                                    "mid": "M12345",
-                                    "checkin": "12:00:00 27/6/2026",
-                                    "checkout": "17:00:00 27/6/2026",
+                                    "id": "Machine_X",
+                                    "name": "Machine_X",
+                                    "ip": "192.168.1.100",
+                                    "cf": 0,
+                                    "qraw": 0,
+                                    "qfinal": 0,
+                                    "pid": "P001",
+                                    "eid": "E001",
+                                    "mid": "M001",
                                     "outputs": {
                                         "output_1": {
                                             "name": "OUTPUT 1",
                                             "rpm": 0,
-                                            "status": 1
+                                            "status": 0
                                         },
                                         "output_2": {
                                             "name": "OUTPUT 2",
@@ -38,7 +39,7 @@
                                         "output_3": {
                                             "name": "OUTPUT 3",
                                             "rpm": 0,
-                                            "status": 1
+                                            "status": 0
                                         },
                                         "output_4": {
                                             "name": "OUTPUT 4",
@@ -50,13 +51,69 @@
                                         "enabled": 0,
                                         "motor_1": {
                                             "name": "Motor 1",
-                                            "state": 1
+                                            "state": 0
                                         },
                                         "motor_2": {
                                             "name": "Motor 2",
-                                            "state": 1
+                                            "state": 0
+                                        },
+                                        "motor_3": {
+                                            "name": "Motor 3",
+                                            "state": 0
+                                        },
+                                        "motor_4": {
+                                            "name": "Motor 4",
+                                            "state": 0
                                         }
-                                    }
+                                    },
+                                    "sheet_link": "https://docs.google.com/spreadsheets/d/1nWi7gPbwO_FAe3IdmzI0q_OSIsJTcBx77wJ66yBZRiw/edit?gid=277851596#gid=277851596",
+                                    "looker_link": "https://datastudio.google.com/u/0/reporting/953e2760-39f0-46ba-aab3-6f244599bc11/page/EFB2F"
+                                },
+                                {
+                                    "id": "Machine_1",
+                                    "name": "Machine_1",
+                                    "ip": "192.168.1.100",
+                                    "cf": 0,
+                                    "qraw": 0,
+                                    "qfinal": 0,
+                                    "pid": "P001",
+                                    "eid": "E001",
+                                    "mid": "M001",
+                                    "outputs": {
+                                        "output_1": {
+                                            "name": "OUTPUT 1",
+                                            "rpm": 0,
+                                            "status": 0
+                                        },
+                                        "output_2": {
+                                            "name": "OUTPUT 2",
+                                            "rpm": 0,
+                                            "status": 0
+                                        },
+                                        "output_3": {
+                                            "name": "OUTPUT 3",
+                                            "rpm": 0,
+                                            "status": 0
+                                        },
+                                        "output_4": {
+                                            "name": "OUTPUT 4",
+                                            "rpm": 0,
+                                            "status": 0
+                                        }
+                                    },
+                                    "motors": {
+                                        "enabled": 0,
+                                        "motor_1": {
+                                            "name": "Motor 1",
+                                            "state": 0
+                                        },
+                                        "motor_2": {
+                                            "name": "Motor 2",
+                                            "state": 0
+                                        }
+                                    },
+                                    "sheet_link": "https://docs.google.com/spreadsheets/d/1g0fV7tF-Owf7e_O3uK9aooQR-Up3u45DgNvUL27zjF0/edit?gid=0#gid=0",
+                                    "looker_link": ""
                                 }
                             ]
                         }
