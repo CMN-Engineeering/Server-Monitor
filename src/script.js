@@ -574,6 +574,7 @@ window.editMachineDetails = function(machineIdx) {
     if (!checkAdminAccess()) return;
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex].machineUnits[machineIdx];
     
+    let newName = prompt("Sửa ID máy:", machine.name) || machine.name;
     let newId = prompt("Sửa ID máy:", machine.id) || machine.id;
     let newIp = prompt("Sửa IP máy:", machine.ip || "") || machine.ip;
     let newPid = prompt("Sửa PID:", machine.pid || "") || machine.pid;
@@ -582,7 +583,7 @@ window.editMachineDetails = function(machineIdx) {
     let newSheet = prompt("Sửa Link Gooogle Sheet:", machine.sheet_link || "") || machine.sheet_link;
     let newDashboard = prompt("Sửa Link Looker:", machine.looker_link || "") || machine.looker_link;
     
-    machine.id = newId; machine.ip = newIp;
+    machine.name = newName; machine.id = newId; machine.ip = newIp;
     machine.pid = newPid; machine.eid = newEid; machine.mid = newMid;
     machine.sheet_link = newSheet; machine.looker_link = newDashboard;
     
