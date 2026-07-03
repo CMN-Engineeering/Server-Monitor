@@ -190,10 +190,10 @@ function viewStorageDashboard() {
                         <div><strong>Name:</strong> ${machine.name || 'N/A'}</div>
                         <div><strong>ID:</strong> ${machine.id || 'N/A'}</div>
                         <div><strong>IP:</strong> ${machine.ip || 'N/A'}</div>
-                        <div><strong>PID:</strong> ${machine.pid || 'N/A'}</div>
-                        <div><strong>EID:</strong> ${machine.eid || 'N/A'}</div>
-                        <div><strong>MID:</strong> ${machine.mid || 'N/A'}</div>
-                        <div><strong>CF:</strong> ${machine.cf || 'N/A'}</div>
+                        <div><strong>PID:</strong> <span id="info-pid-${mIdx}">${machine.pid || 'N/A'}</span></div>
+                        <div><strong>EID:</strong> <span id="info-eid-${mIdx}">${machine.eid || 'N/A'}</span></div>
+                        <div><strong>MID:</strong> <span id="info-mid-${mIdx}">${machine.mid || 'N/A'}</span></div>
+                        <div><strong>CF:</strong> <span id="info-cf-${mIdx}">${machine.cf || 'N/A'}</span></div>
                         <div>
                     </div>
                     <div style="margin-top: 10px;display:flex;flex-direction:column;height:100px;justify-content: space-evenly;">
@@ -206,33 +206,14 @@ function viewStorageDashboard() {
                 <div id="amount-card" style="display: flex;align-items: center;justify-content: flex-start;flex-direction: column;">
                     <h3 style="margin-top:0; margin-bottom: 10px;">Amount</h3>
                     <div style = "background: #97c4f55e;width: 200px;height: max-content;display: flex;align-items: center;justify-content: center;padding: 15px;margin: 10px;border-radius: 15px;">
-                        <strong style="display:block; margin-bottom:5px;">QRAW : ${machine.qraw}</strong>
+                        <strong style="display:block; margin-bottom:5px;" id="info-qraw-${mIdx}">QRAW : ${machine.qraw || 0}</strong>
                     </div>
                     <div style = "background: #97c4f55e;width: 200px;height: max-content;display: flex;align-items: center;justify-content: center;padding: 15px;margin: 10px;border-radius: 15px;">
-                        <strong style="display:block; margin-bottom:5px;">QFINAL : ${machine.qfinal}</strong>
+                        <strong style="display:block; margin-bottom:5px;" id="info-qfinal-${mIdx}">QFINAL : ${machine.qfinal || 0}</strong>
                     </div>
                 </div>
             
-            <div id="motor-control-card" style="display:flex;justify-content:center;flex-direction: column;">
-                
-                <!--<h4 style="margin: 10px 0;">Outputs</h4>
-                <div class="component-mini-grid" style="display:flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px;">-->`;
-        
-        // if (machine.outputs) {
-        //     Object.entries(machine.outputs).forEach(([cKey, conv]) => {
-        //         const isRunning = parseInt(conv.status) === 1;
-        //         html += `
-        //         <div id="output-container-${mIdx}-${cKey}" class="conv-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isRunning ? '#d4edda' : '#f8d7da'};">
-        //             <strong style="display:block; margin-bottom:5px;">${conv.name || cKey}</strong>
-        //             <p id="output-status-${mIdx}-${cKey}" style="margin:5px 0;">Trạng thái: ${isRunning ? '🟢 Đang chạy' : '🔴 Dừng'}</p>
-        //             <p style="margin:5px 0;">Tốc độ: <span id="output-rpm-${mIdx}-${cKey}" style="font-weight:bold;">${conv.rpm || 0}</span> RPM</p>
-        //             <button id="output-btn-${mIdx}-${cKey}" style="width:100%; background:${isRunning ? '#dc3545' : '#28a745'}; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer;" onclick="togglecomponent(${mIdx}, '${cKey}')">
-        //                 ${isRunning ? 'Tắt' : 'Bật'}
-        //             </button>
-        //         </div>`;
-        //     });
-        // }
-        
+            <div id="motor-control-card" style="display:flex;justify-content:center;flex-direction: column;">`;
         
         if (machine.motors) {
             const isMotorsEnabled = machine.motors.enabled === true || parseInt(machine.motors.enabled) === 1;
@@ -263,7 +244,6 @@ function viewStorageDashboard() {
     html += `</div>`;
     detailsContent.innerHTML = html;
 }
-
 // ==========================================
 // 6. SOFT UPDATE (UI SYNC)
 // ==========================================
@@ -279,6 +259,20 @@ function updateDashboardData() {
                 const statusEl = document.getElementById(`output-status-${mIdx}-${cKey}`);
                 const rpmEl = document.getElementById(`output-rpm-${mIdx}-${cKey}`);
                 const btnEl = document.getElementById(`output-btn-${mIdx}-${cKey}`);
+
+                const pidEl = document.getElementById(`info-pid-${mIdx}`);
+                const eidEl = document.getElementById(`info-eid-${mIdx}`);
+                const midEl = document.getElementById(`info-mid-${mIdx}`);
+                const cfEl = document.getElementById(`info-cf-${mIdx}`);
+                const qrawEl = document.getElementById(`info-qraw-${mIdx}`);
+                const qfinalEl = document.getElementById(`info-qfinal-${mIdx}`);
+
+                if (pidEl) pidEl.innerText = machine.pid || 'N/A';
+                if (eidEl) eidEl.innerText = machine.eid || 'N/A';
+                if (midEl) midEl.innerText = machine.mid || 'N/A';
+                if (cfEl) cfEl.innerText = machine.cf || 'N/A';
+                if (qrawEl) qrawEl.innerText = `QRAW : ${machine.qraw || 0}`;
+                if (qfinalEl) qfinalEl.innerText = `QFINAL : ${machine.qfinal || 0}`;
 
                 if (container && statusEl && rpmEl && btnEl) {
                     container.style.background = isRunning ? '#d4edda' : '#f8d7da';
@@ -398,7 +392,11 @@ function generateTopicsFromData() {
             storage.machine_types.forEach(typeObj => {
                 if (!Array.isArray(typeObj.machineUnits)) return;
                 typeObj.machineUnits.forEach(machine => {
-                    topics.push(`${factory.id}/${storage.id}/${typeObj.type}/${machine.id}/motor/status`);
+                    // Added session topic
+                    topics.push(`${factory.id}/${storage.id}/${typeObj.type}/${machine.id}/session`);
+                    topics.push(`${factory.id}/${storage.id}/${typeObj.type}/${machine.id}/session/data`);
+                    topics.push(`${factory.id}/${storage.id}/${typeObj.type}/${machine.id}/session/info`);
+                    topics.push(`${factory.id}/${storage.id}/${typeObj.type}/${machine.id}/check`);
                 });
             });
         });
@@ -406,6 +404,56 @@ function generateTopicsFromData() {
     return topics;
 }
 
+function handleMQTTMessage(topic, message) {
+    if (!systemData) return;
+    try {
+        console.log(`Received message from topic : ${topic}`)
+        console.log(`Content : ${message}`)
+        let data = message;
+        if (typeof message === 'string' && message.startsWith('{')) data = JSON.parse(message);
+        
+        if (topic === 'supervisory') {
+            systemData = data;
+            updateDashboardData();
+            return;
+        }
+
+        const topicParts = topic.split('/');
+        const fId = topicParts[0], sId = topicParts[1], typeId = topicParts[2], mId = topicParts[3];
+
+        // Handle the new session topic
+        if (topic.endsWith('/session')) {
+            updateSessionBatch(fId, sId, typeId, mId, data);
+            updateDashboardData();
+        }
+        
+        if (topic.endsWith('/motor/status')) {
+            if (data && String(data["Control Mode"]) === "2") {
+                updateMotorStatusBatch(fId, sId, typeId, mId, data);
+                updateDashboardData(); 
+            }
+        }
+    } catch (error) {
+        console.error("Lỗi parse MQTT:", error);
+    }
+}
+
+// Function to map the incoming session data to the system state
+function updateSessionBatch(fId, sId, typeId, mId, data) {
+    if (!systemData || !systemData.factories) return;
+    const factory = systemData.factories.find(f => f.id === fId); if (!factory) return;
+    const storage = factory.storageUnits.find(s => s.id === sId); if (!storage) return;
+    const typeObj = (storage.machine_types || []).find(t => t.type === typeId); if (!typeObj) return;
+    const machine = typeObj.machineUnits.find(m => m.id === mId); if (!machine) return;
+
+    if (data.PID !== undefined) machine.pid = data.PID;
+    // Using .trim() to clean up characters like '\n' from EID in the payload
+    if (data.EID !== undefined) machine.eid = String(data.EID).trim(); 
+    if (data.MID !== undefined) machine.mid = data.MID;
+    if (data.cf !== undefined) machine.cf = data.cf;
+    if (data.qraw !== undefined) machine.qraw = data.qraw;
+    if (data.qfinal !== undefined) machine.qfinal = data.qfinal;
+}
 function subscribeToDataTopics() {
     if (!mqttClient) return;
     const allTopics = [...generateTopicsFromData(), 'supervisory'];
@@ -415,6 +463,8 @@ function subscribeToDataTopics() {
 function handleMQTTMessage(topic, message) {
     if (!systemData) return;
     try {
+        console.log(`Received message from topic : ${topic}`)
+        console.log(`Content : ${message}`)
         let data = message;
         if (typeof message === 'string' && message.startsWith('{')) data = JSON.parse(message);
         if (topic === 'supervisory') {
@@ -422,7 +472,12 @@ function handleMQTTMessage(topic, message) {
             updateDashboardData();
             return;
         }
-        
+        if (topic.includes('/session/data')){
+            
+        }
+        if (topic.includes('check')){
+
+        }
         const topicParts = topic.split('/');
         if (topic.includes('/motor/status')) {
             const fId = topicParts[0], sId = topicParts[1], typeId = topicParts[2], mId = topicParts[3];
@@ -574,7 +629,7 @@ window.editMachineDetails = function(machineIdx) {
     if (!checkAdminAccess()) return;
     const machine = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex].machineUnits[machineIdx];
     
-    let newName = prompt("Sửa ID máy:", machine.name) || machine.name;
+    let newName = prompt("Sửa Tên máy:", machine.name) || machine.name;
     let newId = prompt("Sửa ID máy:", machine.id) || machine.id;
     let newIp = prompt("Sửa IP máy:", machine.ip || "") || machine.ip;
     let newPid = prompt("Sửa PID:", machine.pid || "") || machine.pid;

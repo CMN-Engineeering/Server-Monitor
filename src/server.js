@@ -81,6 +81,8 @@ function writeToInfluxDB(topic, payload) {
 const mqttClient = mqtt.connect(`mqtt://${LOCAL_IP}:2248`, { username: 'amt', password: 'amt123456' });
 mqttClient.on('connect', () => {
   mqttClient.subscribe('+/+/+/+/motor/status', (err) => {});
+  mqttClient.subscribe('+/+/+/+/session', (err) => {});
+
 });
 mqttClient.on('message', (topic, message) => {
   try {
@@ -106,6 +108,17 @@ function updateDataFromMqtt(topic, payload) {
       if (typeObj) {
         const machine = (typeObj.machineUnits || []).find(m => m.id === m_id);
         if (machine) {
+          
+          // Handle the new session data persistence
+          if (topic.endsWith('/session')) {
+              if (payload['PID'] !== undefined) { machine.pid = payload['PID']; updated = true; }
+              if (payload['EID'] !== undefined) { machine.eid = String(payload['EID']).trim(); updated = true; }
+              if (payload['MID'] !== undefined) { machine.mid = payload['MID']; updated = true; }
+              if (payload['cf'] !== undefined) { machine.cf = payload['cf']; updated = true; }
+              if (payload['qraw'] !== undefined) { machine.qraw = payload['qraw']; updated = true; }
+              if (payload['qfinal'] !== undefined) { machine.qfinal = payload['qfinal']; updated = true; }
+          }
+
           if (topic.includes('/motor/status') || payload['Control Mode'] !== undefined) {
             if (String(payload['Control Mode'] || "") === "2") {
               if (!machine.motors) machine.motors = {};
@@ -135,7 +148,6 @@ function updateDataFromMqtt(topic, payload) {
     mqttClient.publish('supervisory', JSON.stringify(sysData), { qos: 1 });
   }
 }
-
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 app.get('/api/get-broker-ip', (req, res) => {
