@@ -311,6 +311,7 @@ function updateDashboardData() {
             });
         }
     });
+    viewStorageDashboard();
 }
 
 function openMachineControl(machine_ip) {
@@ -459,36 +460,6 @@ function subscribeToDataTopics() {
     const allTopics = [...generateTopicsFromData(), 'supervisory'];
     allTopics.forEach(topic => mqttClient.subscribe(topic, { qos: 0 }));
 }
-
-function handleMQTTMessage(topic, message) {
-    if (!systemData) return;
-    try {
-        console.log(`Received message from topic : ${topic}`)
-        console.log(`Content : ${message}`)
-        let data = message;
-        if (typeof message === 'string' && message.startsWith('{')) data = JSON.parse(message);
-        if (topic === 'supervisory') {
-            systemData = data;
-            updateDashboardData();
-            return;
-        }
-        if (topic.includes('/session/data')){
-            
-        }
-        if (topic.includes('check')){
-
-        }
-        const topicParts = topic.split('/');
-        if (topic.includes('/motor/status')) {
-            const fId = topicParts[0], sId = topicParts[1], typeId = topicParts[2], mId = topicParts[3];
-            if (data && String(data["Control Mode"]) === "2") {
-                updateMotorStatusBatch(fId, sId, typeId, mId, data);
-                updateDashboardData(); 
-            }
-        }
-    } catch (error) {}
-}
-
 function updateMotorStatusBatch(fId, sId, typeId, mId, data) {
     if (!systemData || !systemData.factories) return;
     const factory = systemData.factories.find(f => f.id === fId); if (!factory) return;
