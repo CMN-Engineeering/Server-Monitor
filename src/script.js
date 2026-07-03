@@ -374,7 +374,7 @@ function initializeMQTTConnection() {
     const clientId = 'monitor-client-' + Math.random().toString(36).substring(7);
     const host = `ws://172.17.0.1:9001/mqtt`;
     mqttClient = mqtt.connect(host, {
-        keepalive: 60, username: 'amt', password: 'amt123456', clientId: clientId,
+        keepalive: 60, username: 'admin', password: 'admin', clientId: clientId,
         protocolId: 'MQTT', protocolVersion: 4, clean: true, reconnectPeriod: 1000
     });
     
