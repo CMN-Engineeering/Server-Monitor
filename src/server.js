@@ -77,7 +77,7 @@ function writeToInfluxDB(topic, payload) {
   if (hasData) writeApi.writePoint(point);
 }
 
-const mqttClient = mqtt.connect(`mqtt://${LOCAL_IP}:2250`, { username: 'admin', password: 'admin' });
+const mqttClient = mqtt.connect(`mqtt://172.17.0.1:2250`, { username: 'admin', password: 'admin' });
 
 mqttClient.on('connect', () => {
   mqttClient.subscribe('+/+/+/+/motor/status', (err) => {});
