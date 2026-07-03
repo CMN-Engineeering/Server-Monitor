@@ -159,6 +159,7 @@ function handleMachineSelection() {
 function openPage(url){
     window.open(url, '_blank');
 }
+
 function viewStorageDashboard() {
     if (selectedFactoryIndex === "" || selectedStorageIndex === "" || selectedTypeIndex === "") {
         detailsContent.innerHTML = "";
@@ -244,6 +245,7 @@ function viewStorageDashboard() {
     html += `</div>`;
     detailsContent.innerHTML = html;
 }
+
 // ==========================================
 // 6. SOFT UPDATE (UI SYNC)
 // ==========================================
@@ -252,6 +254,23 @@ function updateDashboardData() {
     
     const typeObj = systemData.factories[selectedFactoryIndex].storageUnits[selectedStorageIndex].machine_types[selectedTypeIndex];
     typeObj.machineUnits.forEach((machine, mIdx) => {
+        
+        // --- REAL-TIME SESSION DATA UPDATE ---
+        const pidEl = document.getElementById(`info-pid-${mIdx}`);
+        const eidEl = document.getElementById(`info-eid-${mIdx}`);
+        const midEl = document.getElementById(`info-mid-${mIdx}`);
+        const cfEl = document.getElementById(`info-cf-${mIdx}`);
+        const qrawEl = document.getElementById(`info-qraw-${mIdx}`);
+        const qfinalEl = document.getElementById(`info-qfinal-${mIdx}`);
+
+        if (pidEl) pidEl.innerText = machine.pid || 'N/A';
+        if (eidEl) eidEl.innerText = machine.eid || 'N/A';
+        if (midEl) midEl.innerText = machine.mid || 'N/A';
+        if (cfEl) cfEl.innerText = machine.cf || 'N/A';
+        if (qrawEl) qrawEl.innerText = `QRAW : ${machine.qraw || 0}`;
+        if (qfinalEl) qfinalEl.innerText = `QFINAL : ${machine.qfinal || 0}`;
+
+        // --- MOTORS & OUTPUTS SOFT UPDATE ---
         if (machine.outputs) {
             Object.entries(machine.outputs).forEach(([cKey, conv]) => {
                 const isRunning = parseInt(conv.status) === 1;
@@ -259,20 +278,6 @@ function updateDashboardData() {
                 const statusEl = document.getElementById(`output-status-${mIdx}-${cKey}`);
                 const rpmEl = document.getElementById(`output-rpm-${mIdx}-${cKey}`);
                 const btnEl = document.getElementById(`output-btn-${mIdx}-${cKey}`);
-
-                const pidEl = document.getElementById(`info-pid-${mIdx}`);
-                const eidEl = document.getElementById(`info-eid-${mIdx}`);
-                const midEl = document.getElementById(`info-mid-${mIdx}`);
-                const cfEl = document.getElementById(`info-cf-${mIdx}`);
-                const qrawEl = document.getElementById(`info-qraw-${mIdx}`);
-                const qfinalEl = document.getElementById(`info-qfinal-${mIdx}`);
-
-                if (pidEl) pidEl.innerText = machine.pid || 'N/A';
-                if (eidEl) eidEl.innerText = machine.eid || 'N/A';
-                if (midEl) midEl.innerText = machine.mid || 'N/A';
-                if (cfEl) cfEl.innerText = machine.cf || 'N/A';
-                if (qrawEl) qrawEl.innerText = `QRAW : ${machine.qraw || 0}`;
-                if (qfinalEl) qfinalEl.innerText = `QFINAL : ${machine.qfinal || 0}`;
 
                 if (container && statusEl && rpmEl && btnEl) {
                     container.style.background = isRunning ? '#d4edda' : '#f8d7da';
@@ -311,7 +316,6 @@ function updateDashboardData() {
             });
         }
     });
-    viewStorageDashboard();
 }
 
 function openMachineControl(machine_ip) {
@@ -393,7 +397,6 @@ function generateTopicsFromData() {
             storage.machine_types.forEach(typeObj => {
                 if (!Array.isArray(typeObj.machineUnits)) return;
                 typeObj.machineUnits.forEach(machine => {
-                    // Added session topic
                     topics.push(`${factory.id}/${storage.id}/${typeObj.type}/${machine.id}/session`);
                     topics.push(`${factory.id}/${storage.id}/${typeObj.type}/${machine.id}/session/data`);
                     topics.push(`${factory.id}/${storage.id}/${typeObj.type}/${machine.id}/session/info`);
@@ -405,11 +408,18 @@ function generateTopicsFromData() {
     return topics;
 }
 
+function subscribeToDataTopics() {
+    if (!mqttClient) return;
+    const allTopics = [...generateTopicsFromData(), 'supervisory'];
+    allTopics.forEach(topic => mqttClient.subscribe(topic, { qos: 0 }));
+}
+
 function handleMQTTMessage(topic, message) {
     if (!systemData) return;
     try {
         console.log(`Received message from topic : ${topic}`)
         console.log(`Content : ${message}`)
+        
         let data = message;
         if (typeof message === 'string' && message.startsWith('{')) data = JSON.parse(message);
         
@@ -422,12 +432,11 @@ function handleMQTTMessage(topic, message) {
         const topicParts = topic.split('/');
         const fId = topicParts[0], sId = topicParts[1], typeId = topicParts[2], mId = topicParts[3];
 
-        // Handle the new session topic
         if (topic.endsWith('/session')) {
             updateSessionBatch(fId, sId, typeId, mId, data);
             updateDashboardData();
         }
-        
+
         if (topic.endsWith('/motor/status')) {
             if (data && String(data["Control Mode"]) === "2") {
                 updateMotorStatusBatch(fId, sId, typeId, mId, data);
@@ -435,11 +444,10 @@ function handleMQTTMessage(topic, message) {
             }
         }
     } catch (error) {
-        console.error("Lỗi parse MQTT:", error);
+        console.error("MQTT parse error:", error);
     }
 }
 
-// Function to map the incoming session data to the system state
 function updateSessionBatch(fId, sId, typeId, mId, data) {
     if (!systemData || !systemData.factories) return;
     const factory = systemData.factories.find(f => f.id === fId); if (!factory) return;
@@ -448,18 +456,13 @@ function updateSessionBatch(fId, sId, typeId, mId, data) {
     const machine = typeObj.machineUnits.find(m => m.id === mId); if (!machine) return;
 
     if (data.PID !== undefined) machine.pid = data.PID;
-    // Using .trim() to clean up characters like '\n' from EID in the payload
     if (data.EID !== undefined) machine.eid = String(data.EID).trim(); 
     if (data.MID !== undefined) machine.mid = data.MID;
     if (data.cf !== undefined) machine.cf = data.cf;
     if (data.qraw !== undefined) machine.qraw = data.qraw;
     if (data.qfinal !== undefined) machine.qfinal = data.qfinal;
 }
-function subscribeToDataTopics() {
-    if (!mqttClient) return;
-    const allTopics = [...generateTopicsFromData(), 'supervisory'];
-    allTopics.forEach(topic => mqttClient.subscribe(topic, { qos: 0 }));
-}
+
 function updateMotorStatusBatch(fId, sId, typeId, mId, data) {
     if (!systemData || !systemData.factories) return;
     const factory = systemData.factories.find(f => f.id === fId); if (!factory) return;

@@ -1,8 +1,7 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
-import https from 'https';
-import http from 'http';
+import http from 'http'; // No longer need https
 import mqtt from 'mqtt';
 import { InfluxDB, Point } from '@influxdata/influxdb-client';
 import { publicIpv4 } from 'public-ip';
@@ -79,11 +78,12 @@ function writeToInfluxDB(topic, payload) {
 }
 
 const mqttClient = mqtt.connect(`mqtt://${LOCAL_IP}:2248`, { username: 'amt', password: 'amt123456' });
+
 mqttClient.on('connect', () => {
   mqttClient.subscribe('+/+/+/+/motor/status', (err) => {});
   mqttClient.subscribe('+/+/+/+/session', (err) => {});
-
 });
+
 mqttClient.on('message', (topic, message) => {
   try {
     const payload = JSON.parse(message.toString());
@@ -109,7 +109,6 @@ function updateDataFromMqtt(topic, payload) {
         const machine = (typeObj.machineUnits || []).find(m => m.id === m_id);
         if (machine) {
           
-          // Handle the new session data persistence
           if (topic.endsWith('/session')) {
               if (payload['PID'] !== undefined) { machine.pid = payload['PID']; updated = true; }
               if (payload['EID'] !== undefined) { machine.eid = String(payload['EID']).trim(); updated = true; }
@@ -148,6 +147,7 @@ function updateDataFromMqtt(topic, payload) {
     mqttClient.publish('supervisory', JSON.stringify(sysData), { qos: 1 });
   }
 }
+
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 app.get('/api/get-broker-ip', (req, res) => {
@@ -182,10 +182,10 @@ app.get('/toggleMotorState', (req, res) => {
 });
 
 const PORT = process.env.PORT || 1224;
-let server = fs.existsSync('key.pem') && fs.existsSync('cert.pem') ? 
-    https.createServer({ key: fs.readFileSync('key.pem'), cert: fs.readFileSync('cert.pem') }, app) : 
-    http.createServer(app);
+
+// 🚀 Explicitly create an HTTP server (No HTTPS / SSL logic)
+const server = http.createServer(app);
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Starting Server...\n🏠 Local: https://localhost:${PORT}\n🌍 Public: https://${SERVER_PUBLIC_IP}:${PORT}`);
+  console.log(`🚀 Starting Server...\n🏠 Local: http://localhost:${PORT}\n🌍 Public: http://${SERVER_PUBLIC_IP}:${PORT}`);
 });
