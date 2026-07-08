@@ -35,7 +35,7 @@ let messageCount = 0;
 const LOCAL_IP = '172.17.0.1'; 
 const INFLUX_URL = process.env.INFLUX_URL || `http://${LOCAL_IP}:8086`;
 const INFLUX_TOKEN = process.env.INFLUX_TOKEN || 'pyWAsS2dYNy7PUVsjIRbl5hmYs3wzdRne8QAJP3bPnYQlDJ17ydnMYH9eP1C-nDGUFcmVZbV_9ZyQpp3FkY1qg==';
-const INFLUX_ORG = process.env.INFLUX_ORG || 'CMN';cat 
+const INFLUX_ORG = process.env.INFLUX_ORG || 'CMN';
 const INFLUX_BUCKET = process.env.INFLUX_BUCKET || 'supervisory';
 
 const influxDB = new InfluxDB({ url: INFLUX_URL, token: INFLUX_TOKEN });
@@ -75,18 +75,16 @@ function writeToInfluxDB(topic, payload) {
     .tag('machine_type', m_type).tag('machine_id', m_id);
 
   let hasData = false;
-  if (payload['Control Mode'] !== undefined && String(payload['Control Mode']) === "2") {
-    if (payload['Enabled'] !== undefined) { point.intField('motors_enabled', parseInt(payload['Enabled'])); hasData = true; }
-    if (payload['Motor 1 State'] !== undefined) { point.intField('motor_1_state', parseInt(payload['Motor 1 State'])); hasData = true; }
-    if (payload['Motor 2 State'] !== undefined) { point.intField('motor_2_state', parseInt(payload['Motor 2 State'])); hasData = true; }
+  if (payload['qraw']){
+    point.floatField('qraw', parseFloat(payload['qraw'])); hasData = true;
   }
-  if (payload['output']) {
-    for (const k of Object.keys(payload['output'])) {
-      if (payload['output'][k].rpm !== undefined) { point.floatField(`output_${k}_rpm`, parseFloat(payload['output'][k].rpm)); hasData = true; }
-      if (payload['output'][k].status !== undefined) { point.intField(`output_${k}_status`, parseInt(payload['output'][k].status)); hasData = true; }
-    }
+  if (payload['qfinal']){
+    point.floatField('qfinal', parseFloat(payload['qfinal'])); hasData = true;
   }
-  if (hasData) writeApi.writePoint(point);
+  if (hasData){
+    writeApi.writePoint(point);
+    console.log(`📥 InfluxDB Point Written for ${f_id}/${s_id}/${m_type}/${m_id}`);
+  }
 }
 
 const mqttClient = mqtt.connect(`mqtt://172.17.0.1:2250`, { username: 'admin', password: 'admin' });
