@@ -14,11 +14,11 @@ docker build -t pc_web .
 Run:
 
 ```bash
-docker run -d --restart unless-stopped -p 1224:1224 --name pc_web -t pc_web 
+docker run -d --restart unless-stopped -p 1225:1225 --name pc_web -t pc_web 
 ```
 -d (Detached mode): This is what makes Docker run "silently." It starts the container in the background and leaves your terminal free.
 
--p 1224:1224: Maps port 1224 from the container (which you exposed in your Dockerfile) to port 1224 on your host machine.
+-p 1225:1225: Maps port 1225 from the container (which you exposed in your Dockerfile) to port 1225 on your host machine.
 
 --restart unless-stopped: This ensures the container behaves like a persistent service. If your app crashes, or if you reboot your entire server, Docker will automatically start this container back up. It will only stay off if you manually type docker stop pc_web.
 

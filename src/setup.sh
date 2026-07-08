@@ -72,7 +72,7 @@ sudo apt install -y docker.io
 sudo systemctl enable docker
 sudo systemctl start docker
 
-rm -rf Server-Monitor || true
+sudo rm -rf Server-Monitor || true
 echo "Cloning repo..."
 sudo git clone https://github.com/CMN-Engineeering/Server-Monitor -b pi
 
@@ -80,14 +80,6 @@ sudo git clone https://github.com/CMN-Engineeering/Server-Monitor -b pi
 sudo docker stop influxdb mynodered grafana pc_web || true
 sudo docker rm influxdb mynodered grafana pc_web || true
 echo "Installing node-red..."
-echo "Checking Docker Hub..."
-
-until curl -fsSL https://registry-1.docker.io/v2/ >/dev/null; do
-    echo "Waiting for Internet..."
-    sleep 5
-done
-
-echo "Internet OK."
 sudo docker run -d --restart unless-stopped -p 1880:1880 -v node_red_data:/data --name mynodered nodered/node-red --add-host=host.docker.internal:host-gateway
 
 echo "Installing InfluxDB using Docker..."
@@ -102,4 +94,4 @@ sudo docker network connect influxdb-grafana grafana || true
 cd Server-Monitor/src
 echo "Running Web..."
 sudo docker build -t pc-web .
-sudo docker run -d --restart unless-stopped -p 1225:1225 --name pc_web -t pc_web
+sudo docker run -d --restart unless-stopped -p 1225:1225 --name pc-web -t pc-web
