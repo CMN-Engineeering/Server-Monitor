@@ -183,7 +183,7 @@ app.get('/toggleMotorState', (req, res) => {
   res.send("OK");
 });
 
-const PORT = process.env.PORT || 1224;
+const PORT = process.env.PORT || 1225;
 
 // 🚀 Explicitly create an HTTP server (No HTTPS / SSL logic)
 const server = http.createServer(app);

@@ -16,8 +16,8 @@
                             "type": "May_Chan",
                             "machineUnits": [
                                 {
-                                    "id": "Machine_X",
-                                    "name": "Machine_X",
+                                    "id": "Machine_1",
+                                    "name": "Machine_1",
                                     "ip": "192.168.1.100",
                                     "cf": 0,
                                     "qraw": 0,
@@ -70,8 +70,8 @@
                                     "looker_link": "https://datastudio.google.com/u/0/reporting/953e2760-39f0-46ba-aab3-6f244599bc11/page/EFB2F"
                                 },
                                 {
-                                    "id": "Machine_1",
-                                    "name": "Machine_1",
+                                    "id": "Machine_2",
+                                    "name": "Machine_2",
                                     "ip": "192.168.1.100",
                                     "cf": 0,
                                     "qraw": 0,
