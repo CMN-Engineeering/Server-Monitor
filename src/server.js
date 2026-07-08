@@ -34,8 +34,8 @@ let messageCount = 0;
 
 const LOCAL_IP = '172.17.0.1'; 
 const INFLUX_URL = process.env.INFLUX_URL || `http://${LOCAL_IP}:8086`;
-const INFLUX_TOKEN = process.env.INFLUX_TOKEN || '6cDudw35AmidCnSwv4wvRApiTYWaOir5hoctURjyaWO12I3bjQCNR461IpcprEaOiBxRynkBraNBuoGEFXqObA==';
-const INFLUX_ORG = process.env.INFLUX_ORG || 'CMN';
+const INFLUX_TOKEN = process.env.INFLUX_TOKEN || 'pyWAsS2dYNy7PUVsjIRbl5hmYs3wzdRne8QAJP3bPnYQlDJ17ydnMYH9eP1C-nDGUFcmVZbV_9ZyQpp3FkY1qg==';
+const INFLUX_ORG = process.env.INFLUX_ORG || 'CMN';cat 
 const INFLUX_BUCKET = process.env.INFLUX_BUCKET || 'supervisory';
 
 const influxDB = new InfluxDB({ url: INFLUX_URL, token: INFLUX_TOKEN });
