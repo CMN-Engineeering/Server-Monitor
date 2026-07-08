@@ -66,6 +66,8 @@ const writeData = (data) => {
 };
 
 function writeToInfluxDB(topic, payload) {
+  console.log(`📥 Message Received on topic: ${topic}`);
+  console.log(`Payload: ${JSON.stringify(payload)}`);
   const parts = topic.split('/');
   if (parts.length < 4) return;
   const f_id = parts[0], s_id = parts[1], m_type = parts[2], m_id = parts[3];
@@ -103,8 +105,6 @@ mqttClient.on('message', (topic, message) => {
 });
 
 function updateDataFromMqtt(topic, payload) {
-  console.log(`📥 MQTT Message Received on topic: ${topic}`);
-  console.log(`Payload: ${JSON.stringify(payload)}`);
   const parts = topic.split('/');
   if (parts.length < 4) return;
   const f_id = parts[0], s_id = parts[1], m_type = parts[2], m_id = parts[3];
