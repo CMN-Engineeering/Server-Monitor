@@ -9,8 +9,20 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const SERVER_PUBLIC_IP = await publicIpv4();
-console.log(`🌍 Server Public IP resolved: ${SERVER_PUBLIC_IP}`);
+let SERVER_PUBLIC_IP = "127.0.0.1";
+
+try {
+    SERVER_PUBLIC_IP = await publicIpv4({
+        timeout: 10000
+    });
+
+    console.log(`🌍 Server Public IP resolved: ${SERVER_PUBLIC_IP}`);
+} catch (err) {
+    console.warn("⚠️ Unable to determine public IP.");
+    console.warn(err.message);
+
+    SERVER_PUBLIC_IP = process.env.PUBLIC_IP || "127.0.0.1";
+}
 
 const app = express();
 app.set('trust proxy', true);

@@ -77,8 +77,8 @@ echo "Cloning repo..."
 sudo git clone https://github.com/CMN-Engineeering/Server-Monitor -b pi
 
 # Suppress errors on stopping/removing containers in case they don't exist yet
-sudo docker stop influxdb mynodered grafana pc_web || true
-sudo docker rm influxdb mynodered grafana pc_web || true
+sudo docker stop influxdb mynodered grafana pc-web || true
+sudo docker rm influxdb mynodered grafana pc-web || true
 echo "Installing node-red..."
 sudo docker run -d --restart unless-stopped -p 1880:1880 -v node_red_data:/data --name mynodered nodered/node-red --add-host=host.docker.internal:host-gateway
 
