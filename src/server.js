@@ -61,8 +61,13 @@ const readData = () => {
 
 const writeData = (data) => {
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 4), 'utf8');
-  } catch (err) {}
+    // USE ASYNCHRONOUS WRITE: Prevents blocking the event loop on high-frequency MQTT updates
+    fs.writeFile(DATA_FILE, JSON.stringify(data, null, 4), 'utf8', (err) => {
+        if (err) console.error("❌ Error writing system data to file:", err);
+    });
+  } catch (err) {
+      console.error("❌ Unexpected error in writeData:", err);
+  }
 };
 
 function writeToInfluxDB(topic, payload) {
@@ -85,10 +90,13 @@ function writeToInfluxDB(topic, payload) {
   }
   if (hasData){
     writeApi.writePoint(point);
+    
+    // ADD THIS LINE: Force the buffer to flush to the database immediately
+    writeApi.flush().catch(err => console.error('❌ Error flushing to InfluxDB:', err));
+    
     console.log(`📥 InfluxDB Point Written for ${f_id}/${s_id}/${m_type}/${m_id}`);
   }
 }
-
 const mqttClient = mqtt.connect(`mqtt://172.17.0.1:2250`, { username: 'admin', password: 'admin' });
 
 mqttClient.on('connect', () => {
