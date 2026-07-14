@@ -34,7 +34,7 @@ let messageCount = 0;
 
 const LOCAL_IP = '172.17.0.1'; 
 const INFLUX_URL = process.env.INFLUX_URL || `http://${LOCAL_IP}:8086`;
-const INFLUX_TOKEN = process.env.INFLUX_TOKEN || 'pyWAsS2dYNy7PUVsjIRbl5hmYs3wzdRne8QAJP3bPnYQlDJ17ydnMYH9eP1C-nDGUFcmVZbV_9ZyQpp3FkY1qg==';
+const INFLUX_TOKEN = process.env.INFLUX_TOKEN || 'Z-eeyu5nHVK-oGgaRMsrTpJNtTR0Ukd_ZUULtKj3klr4I1Nl0I4TfSkFuhmBIXoIkfkIGXfxWmKZY0qAcNXKrg==';
 const INFLUX_ORG = process.env.INFLUX_ORG || 'CMN';
 const INFLUX_BUCKET = process.env.INFLUX_BUCKET || 'supervisory';
 
@@ -69,6 +69,11 @@ const writeData = (data) => {
       console.error("❌ Unexpected error in writeData:", err);
   }
 };
+
+// ==========================================
+// FIX: LOAD DATA INTO MEMORY ONCE AT STARTUP
+// ==========================================
+let globalSysData = readData();
 
 function writeToInfluxDB(topic, payload) {
   console.log(`📥 Message Received on topic: ${topic}`);
@@ -117,7 +122,10 @@ function updateDataFromMqtt(topic, payload) {
   if (parts.length < 4) return;
   const f_id = parts[0], s_id = parts[1], m_type = parts[2], m_id = parts[3];
 
-  let sysData = readData();
+  // ==========================================
+  // FIX: USE IN-MEMORY CACHE INSTEAD OF readData()
+  // ==========================================
+  let sysData = globalSysData;
   let updated = false;
 
   const factory = (sysData.factories || []).find(f => f.id === f_id);
@@ -163,7 +171,7 @@ function updateDataFromMqtt(topic, payload) {
   }
 
   if (updated) {
-    writeData(sysData);
+    writeData(sysData); // This still writes asynchronously in the background
     mqttClient.publish('supervisory', JSON.stringify(sysData), { qos: 1 });
   }
 }
@@ -176,8 +184,16 @@ app.get('/api/get-broker-ip', (req, res) => {
   res.json({ targetIp: targetIp });
 });
 
-app.get('/api/load-data', (req, res) => res.json(readData()));
-app.post('/api/save-data', (req, res) => { writeData(req.body); mqttClient.publish('supervisory', JSON.stringify(req.body), { qos: 1}); res.json({ success: true }); });
+// ==========================================
+// FIX: ENSURE API ENDPOINTS USE IN-MEMORY DATA
+// ==========================================
+app.get('/api/load-data', (req, res) => res.json(globalSysData));
+app.post('/api/save-data', (req, res) => { 
+    globalSysData = req.body; 
+    writeData(globalSysData); 
+    mqttClient.publish('supervisory', JSON.stringify(globalSysData), { qos: 1}); 
+    res.json({ success: true }); 
+});
 
 app.get('/toggleOutputState', (req, res) => {
   const { factory_id, warehouse_id, machine_id, machine_type, output_id, output_state } = req.query;

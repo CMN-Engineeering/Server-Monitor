@@ -1,99 +1,600 @@
 [
     {
-        "id": "f6f2187d.f17ca8",
+        "id": "af46c1c1a2d6bc5a",
         "type": "tab",
-        "label": "GSheet Report",
+        "label": "MQTT-GSHEET REPORT",
         "disabled": false,
         "info": ""
     },
     {
-        "id": "31a8fcfecff398db",
-        "type": "gauth",
-        "name": "node-red@node-red-499618.iam.gserviceaccount.com"
-    },
-    {
-        "id": "3cc11d24.ff01a2",
-        "type": "comment",
-        "z": "f6f2187d.f17ca8",
-        "name": "WARNING: please check you have started this container with a volume that is mounted to /data\\n otherwise any flow changes are lost when you redeploy or upgrade the container\\n (e.g. upgrade to a more recent node-red docker image).\\n  If you are using named volumes you can ignore this warning.\\n Double click or see info side panel to learn how to start Node-RED in Docker to save your work",
-        "info": "\nTo start docker with a bind mount volume (-v option), for example:\n\n```\ndocker run -it -p 1880:1880 -v /home/user/node_red_data:/data --name mynodered nodered/node-red\n```\n\nwhere `/home/user/node_red_data` is a directory on your host machine where you want to store your flows.\n\nIf you do not do this then you can experiment and redploy flows, but if you restart or upgrade the container the flows will be disconnected and lost. \n\nThey will still exist in a hidden data volume, which can be recovered using standard docker techniques, but that is much more complex than just starting with a named volume as described above.",
-        "x": 350,
-        "y": 80,
-        "wires": []
-    },
-    {
-        "id": "37ba21f59d38bfa1",
-        "type": "GSheet",
-        "z": "f6f2187d.f17ca8",
-        "creds": "31a8fcfecff398db",
-        "method": "append",
-        "action": "",
-        "sheet": "1nWi7gPbwO_FAe3IdmzI0q_OSIsJTcBx77wJ66yBZRiw",
-        "cells": "Sheet1!A2:D2",
-        "flatten": false,
-        "name": "GSheet",
-        "x": 820,
-        "y": 540,
-        "wires": [
-            []
-        ]
-    },
-    {
-        "id": "a1f2d38088b7b385",
-        "type": "http in",
-        "z": "f6f2187d.f17ca8",
+        "id": "542021084bea6113",
+        "type": "mqtt in",
+        "z": "af46c1c1a2d6bc5a",
         "name": "",
-        "url": "/report",
-        "method": "get",
-        "upload": false,
-        "skipBodyParsing": false,
-        "swaggerDoc": "",
-        "x": 390,
-        "y": 540,
+        "topic": "Factory_22/Warehouse_1/May_Chan/Machine_1/session",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "c1a497f58e029de3",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 210,
+        "y": 160,
         "wires": [
             [
-                "1750d309fb50ae47",
-                "17a608a9aa3bd712"
+                "9f873241b1e2a15e",
+                "5b743c4a0791083b"
             ]
         ]
     },
     {
-        "id": "17a608a9aa3bd712",
-        "type": "http response",
-        "z": "f6f2187d.f17ca8",
-        "name": "",
-        "statusCode": "200",
-        "headers": {},
-        "x": 480,
-        "y": 400,
-        "wires": []
-    },
-    {
-        "id": "1750d309fb50ae47",
+        "id": "9f873241b1e2a15e",
         "type": "function",
-        "z": "f6f2187d.f17ca8",
-        "name": "Data",
-        "func": "const machine_id = msg.payload.machine_id;\nconst reporter_id = msg.payload.reporter_id;\nconst production_code = msg.payload.production_code;\nconst checkin = msg.payload.checkin;\nconst checkout = msg.payload.checkout;\nconst amount = msg.payload.amount;\nconst shift_id = msg.payload.shift_id;\nconst status = msg.payload.status;\n\nmsg.payload = [machine_id, reporter_id, production_code,checkin, checkout, amount,shift_id,status];\nreturn msg;",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "Extract Data to GGSheet",
+        "func": "function unix_to_date_str(timestamp){\n    const date = new Date(timestamp * 1000);\n\n    const pad = (num) => String(num).padStart(2, \"0\");\n\n    const formatted =\n    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())} ` +\n    `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;\n    return formatted;\n}\nconst in_int = parseInt(msg.payload[\"check_in\"]);\nconst out_int = parseInt(msg.payload[\"check_out\"]);\nconst machine_start_int = parseInt(msg.payload[\"machine_start\"]);\nconst machine_stop_int = parseInt(msg.payload[\"machine_stop\"]);\n\nmsg.payload = [\n    msg.payload[\"MID\"],\n    msg.payload[\"EID\"],\n    msg.payload[\"PID\"],\n    msg.payload[\"cf\"],\n    unix_to_date_str(machine_start_int),\n    machine_stop_int == 0 ? \"NA\" : unix_to_date_str(machine_stop_int),\n    unix_to_date_str(in_int),\n    out_int == 0 ? \"NA\" : unix_to_date_str(out_int),\n    out_int - in_int,\n    msg.payload[\"qraw\"],\n    msg.payload[\"qfinal\"]\n]\nreturn msg;",
         "outputs": 1,
         "timeout": 0,
         "noerr": 0,
         "initialize": "",
         "finalize": "",
         "libs": [],
-        "x": 570,
-        "y": 540,
+        "x": 590,
+        "y": 160,
         "wires": [
             [
-                "37ba21f59d38bfa1",
-                "2e0ec15b116215c1"
+                "cbfa7201ab18d78d"
             ]
         ]
     },
     {
-        "id": "2e0ec15b116215c1",
+        "id": "4e03047a9de7ef29",
+        "type": "http request",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://script.google.com/macros/s/AKfycbyx3BM8euZRRBxXGw5h7pMLrX4uP1ttqwhbxS7L-tPLHX9iKyqw_PngRs_yz8Ixzq9U/exec",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "Content-Type",
+                "keyValue": "",
+                "valueType": "application/json",
+                "valueValue": ""
+            }
+        ],
+        "x": 2530,
+        "y": 140,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "cbfa7201ab18d78d",
+        "type": "file",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "filename": "data/Factory_22/Warehouse_1/May_Chan/Machine_1/session.txt",
+        "filenameType": "str",
+        "appendNewline": true,
+        "createDir": true,
+        "overwriteFile": "true",
+        "encoding": "utf8",
+        "x": 720,
+        "y": 60,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "721ab33e96fc3ea0",
+        "type": "file in",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "filename": "data/Factory_22/Warehouse_1/May_Chan/Machine_1/session.txt",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 2160,
+        "y": 140,
+        "wires": [
+            [
+                "4e03047a9de7ef29"
+            ]
+        ]
+    },
+    {
+        "id": "f515be8c845992ce",
+        "type": "file in",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "filename": "data/Factory_22/Warehouse_1/May_Chan/Machine_1/session.txt",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": true,
+        "x": 1260,
+        "y": 260,
+        "wires": [
+            [
+                "05bb8aeb8b731659"
+            ]
+        ]
+    },
+    {
+        "id": "05bb8aeb8b731659",
+        "type": "function",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "function 1",
+        "func": "msg.payload = JSON.parse(msg.payload);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1630,
+        "y": 260,
+        "wires": [
+            [
+                "a6f5020c76bfb3ae"
+            ]
+        ]
+    },
+    {
+        "id": "0d6bca64bf96bddb",
+        "type": "mqtt in",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "topic": "Factory_22/Warehouse_1/May_Chan/Machine_2/session",
+        "qos": "1",
+        "datatype": "auto-detect",
+        "broker": "c1a497f58e029de3",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 230,
+        "y": 460,
+        "wires": [
+            [
+                "dc158d3d48ccfaf8",
+                "be9f863377d98582"
+            ]
+        ]
+    },
+    {
+        "id": "be9f863377d98582",
+        "type": "function",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "Extract Data to GGSheet",
+        "func": "function unix_to_date_str(timestamp){\n    const date = new Date(timestamp * 1000);\n\n    const pad = (num) => String(num).padStart(2, \"0\");\n\n    const formatted =\n    `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())} ` +\n    `${pad(date.getDate())}/${pad(date.getMonth() + 1)}/${date.getFullYear()}`;\n    return formatted;\n}\nconst in_int = parseInt(msg.payload[\"check_in\"]);\nconst out_int = parseInt(msg.payload[\"check_out\"]);\nconst machine_start_int = parseInt(msg.payload[\"machine_start\"]);\nconst machine_stop_int = parseInt(msg.payload[\"machine_stop\"]);\n\nmsg.payload = [\n    msg.payload[\"MID\"],\n    msg.payload[\"EID\"],\n    msg.payload[\"PID\"],\n    msg.payload[\"cf\"],\n    unix_to_date_str(machine_start_int),\n    machine_stop_int == 0 ? \"NA\" : unix_to_date_str(machine_stop_int),\n    unix_to_date_str(in_int),\n    out_int == 0 ? \"NA\" : unix_to_date_str(out_int),\n    out_int - in_int,\n    msg.payload[\"qraw\"],\n    msg.payload[\"qfinal\"]\n]\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 460,
+        "wires": [
+            [
+                "13afb77a0f81616a"
+            ]
+        ]
+    },
+    {
+        "id": "7af6ace9e3426f15",
+        "type": "http request",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://script.google.com/macros/s/AKfycbz4PmMyDIuXD035qgy7DcfPBDYiRF6Lmg5XcxXhBBXMsq0VZKHzohaswxPFm-LXtz83xg/exec",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "Content-Type",
+                "keyValue": "",
+                "valueType": "application/json",
+                "valueValue": ""
+            }
+        ],
+        "x": 2570,
+        "y": 600,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "13afb77a0f81616a",
+        "type": "file",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "filename": "data/Factory_22/Warehouse_1/May_Chan/Machine_2/session.txt",
+        "filenameType": "str",
+        "appendNewline": true,
+        "createDir": true,
+        "overwriteFile": "true",
+        "encoding": "utf8",
+        "x": 740,
+        "y": 540,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "18914b2632032fcb",
+        "type": "file in",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "filename": "data/Factory_22/Warehouse_1/May_Chan/Machine_2/session.txt",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 2180,
+        "y": 600,
+        "wires": [
+            [
+                "7af6ace9e3426f15"
+            ]
+        ]
+    },
+    {
+        "id": "2a4a94f2dcaf72df",
+        "type": "file in",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "filename": "data/Factory_22/Warehouse_1/May_Chan/Machine_2/session.txt",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": true,
+        "x": 1260,
+        "y": 720,
+        "wires": [
+            [
+                "b124e4a974b87b99",
+                "b76eb90b04a5fad5"
+            ]
+        ]
+    },
+    {
+        "id": "b124e4a974b87b99",
+        "type": "function",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "function 2",
+        "func": "msg.payload = JSON.parse(msg.payload);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1620,
+        "y": 720,
+        "wires": [
+            [
+                "7f44c5dd1c478278"
+            ]
+        ]
+    },
+    {
+        "id": "a6f5020c76bfb3ae",
+        "type": "GSheet",
+        "z": "af46c1c1a2d6bc5a",
+        "creds": "c7fc4a67ea60eac7",
+        "method": "update",
+        "action": "",
+        "sheet": "1nWi7gPbwO_FAe3IdmzI0q_OSIsJTcBx77wJ66yBZRiw",
+        "cells": "Sheet1!A2",
+        "flatten": false,
+        "name": "",
+        "x": 1850,
+        "y": 260,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7f44c5dd1c478278",
+        "type": "GSheet",
+        "z": "af46c1c1a2d6bc5a",
+        "creds": "c7fc4a67ea60eac7",
+        "method": "update",
+        "action": "",
+        "sheet": "1aV48HPisdobkQlgcq_x3oFkU-94ieEQXL6ZD5eHckrQ",
+        "cells": "Sheet1!A2",
+        "flatten": false,
+        "name": "",
+        "x": 1850,
+        "y": 720,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "f24cded1478cf7e0",
+        "type": "GSheet",
+        "z": "af46c1c1a2d6bc5a",
+        "creds": "c7fc4a67ea60eac7",
+        "method": "get",
+        "action": "",
+        "sheet": "1nWi7gPbwO_FAe3IdmzI0q_OSIsJTcBx77wJ66yBZRiw",
+        "cells": "Sheet1!H2",
+        "flatten": false,
+        "name": "",
+        "x": 1090,
+        "y": 140,
+        "wires": [
+            [
+                "fe168d791992fe5d"
+            ]
+        ]
+    },
+    {
+        "id": "5a8581b61ddb9ab9",
+        "type": "switch",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "neq",
+                "v": "NA",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1610,
+        "y": 640,
+        "wires": [
+            [
+                "18914b2632032fcb",
+                "126d73eb6372068b"
+            ]
+        ]
+    },
+    {
+        "id": "0740eb32846b9e11",
+        "type": "GSheet",
+        "z": "af46c1c1a2d6bc5a",
+        "creds": "c7fc4a67ea60eac7",
+        "method": "get",
+        "action": "",
+        "sheet": "1aV48HPisdobkQlgcq_x3oFkU-94ieEQXL6ZD5eHckrQ",
+        "cells": "Sheet1!H2",
+        "flatten": false,
+        "name": "",
+        "x": 1090,
+        "y": 600,
+        "wires": [
+            [
+                "a6a218991975437d",
+                "c1d4f2ef5e18c4fa"
+            ]
+        ]
+    },
+    {
+        "id": "126d73eb6372068b",
+        "type": "function",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "function 5",
+        "func": "msg.payload = \"True\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1820,
+        "y": 660,
+        "wires": [
+            [
+                "50fbbadce6e25268"
+            ]
+        ]
+    },
+    {
+        "id": "50fbbadce6e25268",
         "type": "debug",
-        "z": "f6f2187d.f17ca8",
-        "name": "debug 1",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1980,
+        "y": 660,
+        "wires": []
+    },
+    {
+        "id": "a6a218991975437d",
+        "type": "switch",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "undefined",
+                "vt": "jsonata"
+            },
+            {
+                "t": "neq",
+                "v": "undefined",
+                "vt": "jsonata"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1290,
+        "y": 600,
+        "wires": [
+            [
+                "18914b2632032fcb"
+            ],
+            [
+                "97aa28528b87ea09"
+            ]
+        ]
+    },
+    {
+        "id": "97aa28528b87ea09",
+        "type": "function",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "function 4",
+        "func": "msg.payload = msg.payload[0][0];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1420,
+        "y": 640,
+        "wires": [
+            [
+                "5a8581b61ddb9ab9"
+            ]
+        ]
+    },
+    {
+        "id": "f9be128adb24a31a",
+        "type": "switch",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "neq",
+                "v": "NA",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1610,
+        "y": 180,
+        "wires": [
+            [
+                "721ab33e96fc3ea0",
+                "553ff9f8418b1765"
+            ]
+        ]
+    },
+    {
+        "id": "fe168d791992fe5d",
+        "type": "switch",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "undefined",
+                "vt": "str"
+            },
+            {
+                "t": "neq",
+                "v": "undefined",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 1230,
+        "y": 140,
+        "wires": [
+            [
+                "721ab33e96fc3ea0"
+            ],
+            [
+                "8e7a19a441470676"
+            ]
+        ]
+    },
+    {
+        "id": "8e7a19a441470676",
+        "type": "function",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "function 3",
+        "func": "msg.payload = msg.payload[0][0];\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1420,
+        "y": 180,
+        "wires": [
+            [
+                "f9be128adb24a31a"
+            ]
+        ]
+    },
+    {
+        "id": "553ff9f8418b1765",
+        "type": "function",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "function 6",
+        "func": "msg.payload = \"True\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1820,
+        "y": 200,
+        "wires": [
+            [
+                "1c39a35b0f8f5d42"
+            ]
+        ]
+    },
+    {
+        "id": "1c39a35b0f8f5d42",
+        "type": "debug",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "debug 3",
         "active": true,
         "tosidebar": true,
         "console": false,
@@ -102,12 +603,203 @@
         "targetType": "msg",
         "statusVal": "",
         "statusType": "auto",
-        "x": 760,
-        "y": 480,
+        "x": 1980,
+        "y": 200,
         "wires": []
     },
     {
-        "id": "0c50696ee477051c",
+        "id": "dc158d3d48ccfaf8",
+        "type": "function",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "Check MQTT payload",
+        "func": "const c_in = parseInt(msg.payload[\"check_in\"]);\nconst c_out = parseInt(msg.payload[\"check_out\"]);\nconst m_start = parseInt(msg.payload[\"machine_start\"]);\nconst m_stop = parseInt(msg.payload[\"machine_stop\"]);\nif(c_in + c_out + m_start + m_stop === 0){\n    msg.payload = 0;\n    return msg;\n}\nelse if (c_in * m_start * m_stop === 0) {\n    msg.payload = -1;\n    return msg;\n}\nmsg.payload = 1;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 640,
+        "wires": [
+            [
+                "1a829a93028beca4"
+            ]
+        ]
+    },
+    {
+        "id": "1a829a93028beca4",
+        "type": "switch",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "0",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "1",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 670,
+        "y": 660,
+        "wires": [
+            [
+                "0740eb32846b9e11"
+            ],
+            [
+                "2a4a94f2dcaf72df"
+            ]
+        ]
+    },
+    {
+        "id": "c1d4f2ef5e18c4fa",
+        "type": "debug",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1260,
+        "y": 540,
+        "wires": []
+    },
+    {
+        "id": "b76eb90b04a5fad5",
+        "type": "debug",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "debug 5",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1520,
+        "y": 780,
+        "wires": []
+    },
+    {
+        "id": "5b743c4a0791083b",
+        "type": "function",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "Check MQTT payload",
+        "func": "const c_in = parseInt(msg.payload[\"check_in\"]);\nconst c_out = parseInt(msg.payload[\"check_out\"]);\nconst m_start = parseInt(msg.payload[\"machine_start\"]);\nconst m_stop = parseInt(msg.payload[\"machine_stop\"]);\nif(c_in + c_out + m_start + m_stop === 0){\n    msg.payload = 0;\n    return msg;\n}\nelse if (c_in * m_start * m_stop === 0) {\n    msg.payload = -1;\n    return msg;\n}\nmsg.payload = 1;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 300,
+        "wires": [
+            [
+                "bb5ae553903180c9",
+                "d1651d8198df1beb"
+            ]
+        ]
+    },
+    {
+        "id": "bb5ae553903180c9",
+        "type": "switch",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "0",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "1",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 670,
+        "y": 320,
+        "wires": [
+            [
+                "f24cded1478cf7e0"
+            ],
+            [
+                "f515be8c845992ce"
+            ]
+        ]
+    },
+    {
+        "id": "d1651d8198df1beb",
+        "type": "debug",
+        "z": "af46c1c1a2d6bc5a",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 480,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "c1a497f58e029de3",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "172.17.0.1",
+        "port": "2250",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": 4,
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "c7fc4a67ea60eac7",
+        "type": "gauth",
+        "name": "node-red-gsheet-demo@node-red-gsheet-500908.iam.gserviceaccount.com"
+    },
+    {
+        "id": "53242857338494ff",
         "type": "global-config",
         "env": [],
         "modules": {
