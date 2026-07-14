@@ -70,11 +70,6 @@ const writeData = (data) => {
   }
 };
 
-// ==========================================
-// FIX: LOAD DATA INTO MEMORY ONCE AT STARTUP
-// ==========================================
-let globalSysData = readData();
-
 function writeToInfluxDB(topic, payload) {
   console.log(`📥 Message Received on topic: ${topic}`);
   console.log(`Payload: ${JSON.stringify(payload)}`);
@@ -122,10 +117,7 @@ function updateDataFromMqtt(topic, payload) {
   if (parts.length < 4) return;
   const f_id = parts[0], s_id = parts[1], m_type = parts[2], m_id = parts[3];
 
-  // ==========================================
-  // FIX: USE IN-MEMORY CACHE INSTEAD OF readData()
-  // ==========================================
-  let sysData = globalSysData;
+  let sysData = readData();
   let updated = false;
 
   const factory = (sysData.factories || []).find(f => f.id === f_id);
@@ -171,7 +163,7 @@ function updateDataFromMqtt(topic, payload) {
   }
 
   if (updated) {
-    writeData(sysData); // This still writes asynchronously in the background
+    writeData(sysData);
     mqttClient.publish('supervisory', JSON.stringify(sysData), { qos: 1 });
   }
 }
@@ -184,16 +176,8 @@ app.get('/api/get-broker-ip', (req, res) => {
   res.json({ targetIp: targetIp });
 });
 
-// ==========================================
-// FIX: ENSURE API ENDPOINTS USE IN-MEMORY DATA
-// ==========================================
-app.get('/api/load-data', (req, res) => res.json(globalSysData));
-app.post('/api/save-data', (req, res) => { 
-    globalSysData = req.body; 
-    writeData(globalSysData); 
-    mqttClient.publish('supervisory', JSON.stringify(globalSysData), { qos: 1}); 
-    res.json({ success: true }); 
-});
+app.get('/api/load-data', (req, res) => res.json(readData()));
+app.post('/api/save-data', (req, res) => { writeData(req.body); mqttClient.publish('supervisory', JSON.stringify(req.body), { qos: 1}); res.json({ success: true }); });
 
 app.get('/toggleOutputState', (req, res) => {
   const { factory_id, warehouse_id, machine_id, machine_type, output_id, output_state } = req.query;

@@ -369,23 +369,35 @@ window.toggleMotorEnable = function(machineIdx) {
 // ==========================================
 // 8. KHỞI ĐỘNG VÀ SOCKET / MQTT WEBSOCKET
 // ==========================================
+// ==========================================
+// 8. KHỞI ĐỘNG VÀ SOCKET / MQTT WEBSOCKET
+// ==========================================
 let mqttClient;
 function initializeMQTTConnection() {
     const clientId = 'monitor-client-' + Math.random().toString(36).substring(7);
-    const host = `ws://172.17.0.1:9001/mqtt`;
+    
+    // FIX: Dynamically use the IP or hostname of the machine serving the webpage
+    const brokerHost = window.location.hostname; 
+    const host = `ws://${brokerHost}:9001/mqtt`;
+    
     mqttClient = mqtt.connect(host, {
         keepalive: 60, username: 'admin', password: 'admin', clientId: clientId,
         protocolId: 'MQTT', protocolVersion: 4, clean: true, reconnectPeriod: 1000
     });
     
     mqttClient.on('connect', () => {
+        console.log(`✅ MQTT Connected to ${host}`);
         subscribeToDataTopics();
     });
+    
+    mqttClient.on('error', (err) => {
+        console.error('❌ MQTT Connection Error:', err);
+    });
+
     mqttClient.on('message', (topic, message) => {
         handleMQTTMessage(topic, message.toString());
     });
 }
-
 function generateTopicsFromData() {
     const topics = [];
     if (!systemData || !Array.isArray(systemData.factories)) return topics;
