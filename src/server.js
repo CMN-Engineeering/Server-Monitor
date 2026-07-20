@@ -114,6 +114,9 @@ mqttClient.on('message', (topic, message) => {
 
 function updateDataFromMqtt(topic, payload) {
   const parts = topic.split('/');
+  console.log(`Topic : ${topic}`);
+  console.log(`Payload : ${payload}`);
+  
   if (parts.length < 4) return;
   const f_id = parts[0], s_id = parts[1], m_type = parts[2], m_id = parts[3];
 
@@ -161,7 +164,7 @@ function updateDataFromMqtt(topic, payload) {
       }
     }
   }
-
+  
   if (updated) {
     writeData(sysData);
     mqttClient.publish('supervisory', JSON.stringify(sysData), { qos: 1 });

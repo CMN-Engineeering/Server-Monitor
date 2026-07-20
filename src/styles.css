@@ -40,7 +40,6 @@ body.role-operator .admin-only {
     flex-direction: column;
     gap: 20px;
 }
-
 .machine-block {
     background: #fff;
     border: 1px solid #ccc;

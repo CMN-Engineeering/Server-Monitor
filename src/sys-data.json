@@ -19,12 +19,12 @@
                                     "id": "Machine_1",
                                     "name": "Machine_1",
                                     "ip": "192.168.1.100",
-                                    "cf": 0,
-                                    "qraw": 0,
-                                    "qfinal": 0,
-                                    "pid": "P001",
-                                    "eid": "E001",
-                                    "mid": "M001",
+                                    "cf": "2",
+                                    "qraw": "0",
+                                    "qfinal": "0",
+                                    "pid": "88",
+                                    "eid": "0008883469",
+                                    "mid": "88",
                                     "outputs": {
                                         "output_1": {
                                             "name": "OUTPUT 1",
@@ -48,37 +48,25 @@
                                         }
                                     },
                                     "motors": {
-                                        "enabled": 0,
+                                        "enabled": 1,
                                         "motor_1": {
                                             "name": "Motor 1",
                                             "state": 0
-                                        },
-                                        "motor_2": {
-                                            "name": "Motor 2",
-                                            "state": 0
-                                        },
-                                        "motor_3": {
-                                            "name": "Motor 3",
-                                            "state": 0
-                                        },
-                                        "motor_4": {
-                                            "name": "Motor 4",
-                                            "state": 0
                                         }
                                     },
-                                    "sheet_link": "https://docs.google.com/spreadsheets/d/1nWi7gPbwO_FAe3IdmzI0q_OSIsJTcBx77wJ66yBZRiw/edit?gid=277851596#gid=277851596",
-                                    "looker_link": "https://datastudio.google.com/u/0/reporting/953e2760-39f0-46ba-aab3-6f244599bc11/page/EFB2F"
+                                    "sheet_link": "",
+                                    "looker_link": ""
                                 },
                                 {
                                     "id": "Machine_2",
                                     "name": "Machine_2",
                                     "ip": "192.168.1.100",
-                                    "cf": 0,
-                                    "qraw": 0,
-                                    "qfinal": 0,
-                                    "pid": "P001",
-                                    "eid": "E001",
-                                    "mid": "M001",
+                                    "cf": "2",
+                                    "qraw": "0",
+                                    "qfinal": "0",
+                                    "pid": "88",
+                                    "eid": "0008883469",
+                                    "mid": "88",
                                     "outputs": {
                                         "output_1": {
                                             "name": "OUTPUT 1",
@@ -102,17 +90,13 @@
                                         }
                                     },
                                     "motors": {
-                                        "enabled": 0,
+                                        "enabled": 1,
                                         "motor_1": {
                                             "name": "Motor 1",
                                             "state": 0
-                                        },
-                                        "motor_2": {
-                                            "name": "Motor 2",
-                                            "state": 0
                                         }
                                     },
-                                    "sheet_link":"https://docs.google.com/spreadsheets/d/1aV48HPisdobkQlgcq_x3oFkU-94ieEQXL6ZD5eHckrQ/edit?gid=277851596#gid=277851596",
+                                    "sheet_link": "",
                                     "looker_link": ""
                                 }
                             ]

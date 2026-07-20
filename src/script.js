@@ -21,9 +21,9 @@ const detailsContent = document.getElementById('details-content');
 // 2. XỬ LÝ AUTHENTICATION
 // ==========================================
 function togglePass(id) {
-            const x = document.getElementById(id);
-            x.type = (x.type === "password") ? "text" : "password";
-        }
+    const x = document.getElementById(id);
+    x.type = (x.type === "password") ? "text" : "password";
+}
 function login() {
     const u = document.getElementById('username').value;
     const p = document.getElementById('password').value;
@@ -238,7 +238,7 @@ function viewStorageDashboard() {
                 <div id="motor-container-${mIdx}-${moKey}" class="motor-item" style="flex:1; min-width: 150px; border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: ${isOn ? '#d4edda' : '#f8d7da'};">
                     <strong style="display:block; margin-bottom:5px;">${motor.name || moKey}</strong>
                     <p id="motor-status-${mIdx}-${moKey}" style="margin:5px 0;">Trạng thái: ${isOn ? '🟢 Đang chạy' : '🔴 Dừng'}</p>
-                    <button id="motor-btn-${mIdx}-${moKey}" style="width:100%; background:${isOn ? '#dc3545' : '#28a745'}; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer;" onclick="toggleMotorState(${mIdx}, '${moKey}')">
+                    <button id="motor-btn-${mIdx}-${moKey}" style="display: ${isOn ? 'block' : 'none'}; width:100%; background:${isOn ? '#dc3545' : '#28a745'}; color:white; border:none; padding:8px; border-radius:4px; cursor:pointer;" onclick="toggleMotorState(${mIdx}, '${moKey}')">
                         ${isOn ? 'Tắt' : 'Bật'}
                     </button>
                 </div>`;
@@ -316,6 +316,8 @@ function updateDashboardData() {
                     statusEl.innerText = `Trạng thái: ${isOn ? '🟢 Đang chạy' : '🔴 Dừng'}`;
                     btnEl.style.background = isOn ? '#dc3545' : '#28a745';
                     btnEl.innerText = isOn ? 'Tắt' : 'Bật';
+                    // Hide the button when motor is off
+                    btnEl.style.display = isOn ? 'block' : 'none'; 
                 }
             });
         }
@@ -399,6 +401,8 @@ function initializeMQTTConnection() {
     });
 
     mqttClient.on('message', (topic, message) => {
+        console.log(`Topic : ${topic}`);
+        console.log(`Message : ${message}`);
         handleMQTTMessage(topic, message.toString());
     });
 }
@@ -477,6 +481,10 @@ function updateSessionBatch(fId, sId, typeId, mId, data) {
     if (data.cf !== undefined) machine.cf = data.cf;
     if (data.qraw !== undefined) machine.qraw = data.qraw;
     if (data.qfinal !== undefined) machine.qfinal = data.qfinal;
+    if (data.machine_stop !== undefined) {
+        if (!machine.motors.motor_1) machine.motors.motor_1 = { name: "Motor 1", state: 0 };
+        machine.motors.motor_1.state = parseInt(data.machine_stop) === 0? 1 : 0;
+    }
 }
 
 function updateMotorStatusBatch(fId, sId, typeId, mId, data) {
