@@ -20,6 +20,10 @@ const detailsContent = document.getElementById('details-content');
 // ==========================================
 // 2. XỬ LÝ AUTHENTICATION
 // ==========================================
+function togglePass(id) {
+            const x = document.getElementById(id);
+            x.type = (x.type === "password") ? "text" : "password";
+        }
 function login() {
     const u = document.getElementById('username').value;
     const p = document.getElementById('password').value;

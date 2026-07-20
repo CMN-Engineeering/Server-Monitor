@@ -10,7 +10,7 @@ BROKER = "pi"   # Change to your broker IP/domain
 PORT = 2250               # 8883 for TLS
 USERNAME = "admin" # Set to None if not required
 PASSWORD = "admin" # Set to None if not required
-TOPIC = "Factory_22/Warehouse_1/May_Chan/Machine_1/session"
+TOPIC = "Factory_22/Warehouse_1/May_Chan/Machine_2/session"
 
 # ==========================
 # Create MQTT Client
@@ -55,7 +55,7 @@ try:
         else:
             print(f"Failed to publish ({result.rc})")
 
-        time.sleep(0.01)
+        time.sleep(3)
 
 except KeyboardInterrupt:
     print("Stopping publisher...")
