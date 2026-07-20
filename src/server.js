@@ -133,12 +133,16 @@ function updateDataFromMqtt(topic, payload) {
         if (machine) {
           
           if (topic.endsWith('/session')) {
+              if (topic.endsWith('/session')) {
               if (payload['PID'] !== undefined) { machine.pid = payload['PID']; updated = true; }
               if (payload['EID'] !== undefined) { machine.eid = String(payload['EID']).trim(); updated = true; }
               if (payload['MID'] !== undefined) { machine.mid = payload['MID']; updated = true; }
               if (payload['cf'] !== undefined) { machine.cf = payload['cf']; updated = true; }
               if (payload['qraw'] !== undefined) { machine.qraw = payload['qraw']; updated = true; }
               if (payload['qfinal'] !== undefined) { machine.qfinal = payload['qfinal']; updated = true; }
+              if (payload['check_in'] !== undefined) { machine.check_in = parseInt(payload['check_in']); updated = true; }
+              if (payload['check_out'] !== undefined) { machine.check_out = parseInt(payload['check_out']); updated = true; }
+          }
           }
 
           if (topic.includes('/motor/status') || payload['Control Mode'] !== undefined) {

@@ -186,7 +186,15 @@ function viewStorageDashboard() {
     machinesToRender.forEach((item) => {
         const machine = item.machine;
         const mIdx = item.originalIdx;
-        
+        let checkStatusText = "Chưa Check In";
+        let checkStatusBg = "#ff0808"; // Default Red
+        if (machine.check_out > 0) {
+            checkStatusText = "Đã Check Out";
+            checkStatusBg = "#6c757d"; // Grey
+        } else if (machine.check_in > 0) {
+            checkStatusText = "Đã Check In";
+            checkStatusBg = "#18d411b7"; // Green
+        }
         html += `
         <div class="machine-block" style="position: relative; border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
             <div style="display:flex;justify-content: space-between;flex-direction:row">
@@ -206,6 +214,12 @@ function viewStorageDashboard() {
                         <button class="mgmt-btn" style="background-color: #ffc107; color: black;cursor:pointer" onclick="openPage('${machine.sheet_link}')">Mở Sheet Báo Cáo</button>
                         <button class="mgmt-btn" style="background-color: #ffc107; color: black;cursor:pointer" onclick="openPage('${machine.looker_link}')">Mở Đồ Thị Báo Cáo</button>
                         <button class="mgmt-btn admin-only" style="background-color: #ffc107; color: black;cursor:pointer" onclick="editMachineDetails(${mIdx})">Sửa Thông Tin</button>
+                    </div>
+                </div>
+                <div id="check-in-out-card" style="display: flex;align-items: center;justify-content: flex-start;flex-direction: column;">
+                    <h3 style="margin-top:0; margin-bottom: 10px;">Trạng Thái Phiên Làm Việc</h3>
+                    <div id="check-status-bg-${mIdx}" style="background: ${checkStatusBg}; width: 200px; height: max-content; display: flex; align-items: center; justify-content: center; padding: 15px; margin: 10px; border-radius: 15px; color: white;">
+                        <strong style="display:block; margin-bottom:5px;" id="check-status-${mIdx}">${checkStatusText}</strong>
                     </div>
                 </div>
                 <div id="amount-card" style="display: flex;align-items: center;justify-content: flex-start;flex-direction: column;">
@@ -267,12 +281,28 @@ function updateDashboardData() {
         const qrawEl = document.getElementById(`info-qraw-${mIdx}`);
         const qfinalEl = document.getElementById(`info-qfinal-${mIdx}`);
 
+        const checkStatusEl = document.getElementById(`check-status-${mIdx}`);
+        const checkStatusBg = document.getElementById(`check-status-bg-${mIdx}`);
+
         if (pidEl) pidEl.innerText = machine.pid || 'N/A';
         if (eidEl) eidEl.innerText = machine.eid || 'N/A';
         if (midEl) midEl.innerText = machine.mid || 'N/A';
         if (cfEl) cfEl.innerText = machine.cf || 'N/A';
         if (qrawEl) qrawEl.innerText = `QRAW : ${machine.qraw || 0}`;
         if (qfinalEl) qfinalEl.innerText = `QFINAL : ${machine.qfinal || 0}`;
+
+        if (checkStatusEl && checkStatusBg) {
+            if (machine.check_out > 0) {
+                checkStatusEl.innerText = 'Đã Check Out';
+                checkStatusBg.style.background = '#6c757d'; // Grey
+            } else if (machine.check_in > 0) {
+                checkStatusEl.innerText = 'Đã Check In';
+                checkStatusBg.style.background = '#18d411b7'; // Green
+            } else {
+                checkStatusEl.innerText = 'Chưa Check In';
+                checkStatusBg.style.background = '#ff0808'; // Default Red
+            }
+        }
 
         // --- MOTORS & OUTPUTS SOFT UPDATE ---
         if (machine.outputs) {
@@ -443,11 +473,11 @@ function handleMQTTMessage(topic, message) {
         let data = message;
         if (typeof message === 'string' && message.startsWith('{')) data = JSON.parse(message);
         
-        if (topic === 'supervisory') {
-            systemData = data;
-            updateDashboardData();
-            return;
-        }
+        // if (topic === 'supervisory') {
+        //     systemData = data;
+        //     updateDashboardData();
+        //     return;
+        // }
 
         const topicParts = topic.split('/');
         const fId = topicParts[0], sId = topicParts[1], typeId = topicParts[2], mId = topicParts[3];
@@ -485,6 +515,18 @@ function updateSessionBatch(fId, sId, typeId, mId, data) {
         if (!machine.motors.motor_1) machine.motors.motor_1 = { name: "Motor 1", state: 0 };
         machine.motors.motor_1.state = parseInt(data.machine_stop) === 0? 1 : 0;
     }
+    if (data.check_in !== undefined) {
+        console.log("Writing check in");
+        if (!machine.check_in) machine.check_in = 0;
+        machine.check_in = parseInt(data.check_in);
+        
+    }
+    if (data.check_out !== undefined) {
+        if (!machine.check_out) machine.check_out = 0;
+        machine.check_out = parseInt(data.check_out);
+        
+    }
+
 }
 
 function updateMotorStatusBatch(fId, sId, typeId, mId, data) {

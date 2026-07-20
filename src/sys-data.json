@@ -25,6 +25,8 @@
                                     "pid": "88",
                                     "eid": "0008883469",
                                     "mid": "88",
+                                    "check_in": 0,
+                                    "check_out": 0,
                                     "outputs": {
                                         "output_1": {
                                             "name": "OUTPUT 1",
@@ -62,8 +64,8 @@
                                     "name": "Machine_2",
                                     "ip": "192.168.1.100",
                                     "cf": "2",
-                                    "qraw": "0",
-                                    "qfinal": "0",
+                                    "qraw": "12",
+                                    "qfinal": "33",
                                     "pid": "88",
                                     "eid": "0008883469",
                                     "mid": "88",
@@ -97,7 +99,9 @@
                                         }
                                     },
                                     "sheet_link": "",
-                                    "looker_link": ""
+                                    "looker_link": "",
+                                    "check_in": 0,
+                                    "check_out": 1784558456
                                 }
                             ]
                         }
