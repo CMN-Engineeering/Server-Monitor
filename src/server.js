@@ -1,26 +1,22 @@
 import express from 'express';
-import fs from 'fs';
 import path from 'path';
-import http from 'http'; // No longer need https
+import http from 'http';
 import mqtt from 'mqtt';
 import { InfluxDB, Point } from '@influxdata/influxdb-client';
 import { publicIpv4 } from 'public-ip';
 import { fileURLToPath } from 'url';
+import pkg from 'pg';
 
+const { Pool } = pkg;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 let SERVER_PUBLIC_IP = "127.0.0.1";
 
 try {
-    SERVER_PUBLIC_IP = await publicIpv4({
-        timeout: 10000
-    });
-
+    SERVER_PUBLIC_IP = await publicIpv4({ timeout: 10000 });
     console.log(`🌍 Server Public IP resolved: ${SERVER_PUBLIC_IP}`);
 } catch (err) {
     console.warn("⚠️ Unable to determine public IP.");
-    console.warn(err.message);
-
     SERVER_PUBLIC_IP = process.env.PUBLIC_IP || "127.0.0.1";
 }
 
@@ -29,9 +25,54 @@ app.set('trust proxy', true);
 app.use(express.json());
 app.use(express.static(path.join(__dirname, '.')));
 
-const DATA_FILE = path.join(__dirname, 'sys-data.json');
 let messageCount = 0;
 
+// --- PostgreSQL Setup ---
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'admin',
+  password: process.env.DB_PASSWORD || 'admin',
+  database: process.env.DB_NAME || 'factory_db',
+  port: process.env.DB_PORT || 5432,
+});
+
+// Initialize the database table for JSON storage
+await pool.query(`
+  CREATE TABLE IF NOT EXISTS system_data (
+    id SERIAL PRIMARY KEY,
+    state JSONB NOT NULL
+  )
+`);
+
+// Ensure at least one baseline row exists
+const check = await pool.query('SELECT COUNT(*) FROM system_data');
+if (parseInt(check.rows[0].count) === 0) {
+  await pool.query('INSERT INTO system_data (state) VALUES ($1)', [JSON.stringify({ factories: [] })]);
+}
+
+// DB Data Handlers
+const readData = async () => {
+  try {
+    const res = await pool.query('SELECT state FROM system_data ORDER BY id DESC LIMIT 1');
+    return res.rows[0] ? res.rows[0].state : { factories: [] };
+  } catch (err) {
+    console.error('Database read error:', err);
+    return { factories: [] };
+  }
+};
+
+const writeData = async (data) => {
+  try {
+    await pool.query(
+      'UPDATE system_data SET state = $1 WHERE id = (SELECT id FROM system_data ORDER BY id DESC LIMIT 1)',
+      [data]
+    );
+  } catch (err) {
+    console.error("❌ Error writing system data to Postgres:", err);
+  }
+};
+
+// --- InfluxDB Setup ---
 const LOCAL_IP = '172.17.0.1'; 
 const INFLUX_URL = process.env.INFLUX_URL || `http://${LOCAL_IP}:8086`;
 const INFLUX_TOKEN = process.env.INFLUX_TOKEN || 'Z-eeyu5nHVK-oGgaRMsrTpJNtTR0Ukd_ZUULtKj3klr4I1Nl0I4TfSkFuhmBIXoIkfkIGXfxWmKZY0qAcNXKrg==';
@@ -50,29 +91,7 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
-const readData = () => {
-  try {
-    if (!fs.existsSync(DATA_FILE)) return { factories: [] };
-    return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  } catch (err) {
-    return { factories: [] };
-  }
-};
-
-const writeData = (data) => {
-  try {
-    // USE ASYNCHRONOUS WRITE: Prevents blocking the event loop on high-frequency MQTT updates
-    fs.writeFile(DATA_FILE, JSON.stringify(data, null, 4), 'utf8', (err) => {
-        if (err) console.error("❌ Error writing system data to file:", err);
-    });
-  } catch (err) {
-      console.error("❌ Unexpected error in writeData:", err);
-  }
-};
-
 function writeToInfluxDB(topic, payload) {
-  console.log(`📥 Message Received on topic: ${topic}`);
-  console.log(`Payload: ${JSON.stringify(payload)}`);
   const parts = topic.split('/');
   if (parts.length < 4) return;
   const f_id = parts[0], s_id = parts[1], m_type = parts[2], m_id = parts[3];
@@ -90,13 +109,11 @@ function writeToInfluxDB(topic, payload) {
   }
   if (hasData){
     writeApi.writePoint(point);
-    
-    // ADD THIS LINE: Force the buffer to flush to the database immediately
     writeApi.flush().catch(err => console.error('❌ Error flushing to InfluxDB:', err));
-    
-    console.log(`📥 InfluxDB Point Written for ${f_id}/${s_id}/${m_type}/${m_id}`);
   }
 }
+
+// --- MQTT Setup ---
 const mqttClient = mqtt.connect(`mqtt://172.17.0.1:2250`, { username: 'admin', password: 'admin' });
 
 mqttClient.on('connect', () => {
@@ -104,23 +121,21 @@ mqttClient.on('connect', () => {
   mqttClient.subscribe('+/+/+/+/session', (err) => {});
 });
 
-mqttClient.on('message', (topic, message) => {
+mqttClient.on('message', async (topic, message) => {
   try {
     const payload = JSON.parse(message.toString());
     writeToInfluxDB(topic, payload);
-    updateDataFromMqtt(topic, payload);
+    await updateDataFromMqtt(topic, payload);
   } catch (err) {}
 });
 
-function updateDataFromMqtt(topic, payload) {
+async function updateDataFromMqtt(topic, payload) {
   const parts = topic.split('/');
-  console.log(`Topic : ${topic}`);
-  console.log(`Payload : ${payload}`);
   
   if (parts.length < 4) return;
   const f_id = parts[0], s_id = parts[1], m_type = parts[2], m_id = parts[3];
 
-  let sysData = readData();
+  let sysData = await readData();
   let updated = false;
 
   const factory = (sysData.factories || []).find(f => f.id === f_id);
@@ -133,7 +148,6 @@ function updateDataFromMqtt(topic, payload) {
         if (machine) {
           
           if (topic.endsWith('/session')) {
-              if (topic.endsWith('/session')) {
               if (payload['PID'] !== undefined) { machine.pid = payload['PID']; updated = true; }
               if (payload['EID'] !== undefined) { machine.eid = String(payload['EID']).trim(); updated = true; }
               if (payload['MID'] !== undefined) { machine.mid = payload['MID']; updated = true; }
@@ -142,7 +156,6 @@ function updateDataFromMqtt(topic, payload) {
               if (payload['qfinal'] !== undefined) { machine.qfinal = payload['qfinal']; updated = true; }
               if (payload['check_in'] !== undefined) { machine.check_in = parseInt(payload['check_in']); updated = true; }
               if (payload['check_out'] !== undefined) { machine.check_out = parseInt(payload['check_out']); updated = true; }
-          }
           }
 
           if (topic.includes('/motor/status') || payload['Control Mode'] !== undefined) {
@@ -170,11 +183,12 @@ function updateDataFromMqtt(topic, payload) {
   }
   
   if (updated) {
-    writeData(sysData);
+    await writeData(sysData);
     mqttClient.publish('supervisory', JSON.stringify(sysData), { qos: 1 });
   }
 }
 
+// --- API Routes ---
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 
 app.get('/api/get-broker-ip', (req, res) => {
@@ -183,8 +197,12 @@ app.get('/api/get-broker-ip', (req, res) => {
   res.json({ targetIp: targetIp });
 });
 
-app.get('/api/load-data', (req, res) => res.json(readData()));
-app.post('/api/save-data', (req, res) => { writeData(req.body); mqttClient.publish('supervisory', JSON.stringify(req.body), { qos: 1}); res.json({ success: true }); });
+app.get('/api/load-data', async (req, res) => res.json(await readData()));
+app.post('/api/save-data', async (req, res) => { 
+  await writeData(req.body); 
+  mqttClient.publish('supervisory', JSON.stringify(req.body), { qos: 1}); 
+  res.json({ success: true }); 
+});
 
 app.get('/toggleOutputState', (req, res) => {
   const { factory_id, warehouse_id, machine_id, machine_type, output_id, output_state } = req.query;
@@ -210,7 +228,6 @@ app.get('/toggleMotorState', (req, res) => {
 
 const PORT = process.env.PORT || 1225;
 
-// 🚀 Explicitly create an HTTP server (No HTTPS / SSL logic)
 const server = http.createServer(app);
 
 server.listen(PORT, '0.0.0.0', () => {

@@ -511,9 +511,9 @@ function updateSessionBatch(fId, sId, typeId, mId, data) {
     if (data.cf !== undefined) machine.cf = data.cf;
     if (data.qraw !== undefined) machine.qraw = data.qraw;
     if (data.qfinal !== undefined) machine.qfinal = data.qfinal;
-    if (data.machine_stop !== undefined) {
+    if (data.machine_start !== undefined && data.machine_stop !== undefined) {
         if (!machine.motors.motor_1) machine.motors.motor_1 = { name: "Motor 1", state: 0 };
-        machine.motors.motor_1.state = parseInt(data.machine_stop) === 0? 1 : 0;
+        machine.motors.motor_1.state = (parseInt(data.machine_start) !== 0 && parseInt(data.machine_stop) === 0)? 1 : 0;
     }
     if (data.check_in !== undefined) {
         console.log("Writing check in");

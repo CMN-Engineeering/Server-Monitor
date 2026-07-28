@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # Your PostgreSQL Database Service
+  postgres_db:
+    image: postgres:15
+    container_name: postgres_db
+    environment:
+      # These must match what your web app expects
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin_password
+      POSTGRES_DB: factory_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Your Node.js Web Application Service
+  web_app:
+    build: . # Assuming your Dockerfile is in the same directory
+    container_name: web_app
+    environment:
+      # The DB_HOST must exactly match the name of the database service above
+      - DB_HOST=postgres_db
+      - DB_USER=admin
+      - DB_PASSWORD=admin_password
+      - DB_NAME=factory_db
+      - DB_PORT=5432
+    ports:
+      - "1225:1225"
+    depends_on:
+      - postgres_db
+
+volumes:
+  pgdata:
