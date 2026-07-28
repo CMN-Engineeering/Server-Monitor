@@ -72,23 +72,24 @@ sudo apt install -y docker.io
 sudo systemctl enable docker
 sudo systemctl start docker
 
-sudo rm -rf Server-Monitor || true
-echo "Cloning repo..."
-sudo git clone https://github.com/CMN-Engineeering/Server-Monitor -b pi
-
 # Suppress errors on stopping/removing containers in case they don't exist yet
-sudo docker stop influxdb mynodered grafana pc-web postgres|| true
-sudo docker rm influxdb mynodered grafana pc-web postgres|| true
+sudo docker stop influxdb mynodered grafana pc-web postgresql || true
+sudo docker rm influxdb mynodered grafana pc-web postgresql || true
 echo "Installing node-red..."
 sudo docker run -d --restart unless-stopped -p 1880:1880 -v node_red_data:/data --name mynodered nodered/node-red --add-host=host.docker.internal:host-gateway
 
 echo "Installing InfluxDB using Docker..."
 sudo docker run -d --restart unless-stopped -p 8086:8086 --name influxdb influxdb:2
 
-sudo docker stop postgresql
-sudo docker rm postgresql
+
+echo "Installing grafana..."
+sudo docker run -d --restart unless-stopped -p 3000:3000 --name=grafana grafana/grafana-enterprise
+sudo docker network create influxdb-grafana || true
+sudo docker network connect influxdb-grafana influxdb || true
+sudo docker network connect influxdb-grafana grafana || true
+
 echo "Creating network for Database"
-sudo docker network create database_network
+sudo docker network create database_network || true
 
 echo "Installing Postgres for Database"
 sudo docker run --name postgresql \
@@ -99,22 +100,17 @@ sudo docker run --name postgresql \
   -p 1555:5432 \
   -d postgres
 
-echo "Installing grafana..."
-sudo docker run -d --restart unless-stopped -p 3000:3000 --name=grafana grafana/grafana-enterprise
-sudo docker network create influxdb-grafana || true
-sudo docker network connect influxdb-grafana influxdb || true
-sudo docker network connect influxdb-grafana grafana || true
-
 cd Server-Monitor/src
 echo "Running Web..."
 sudo docker build -t pc-web .
-sudo docker run -d --restart unless-stopped -p 1225:1225 --name pc-web -t pc-web
-sudo docker run --name pc-web \
-  --network my_app_network \
-  -e DB_HOST=postgresql \
-  -e DB_USER=admin \
-  -e DB_PASSWORD=admin \
-  -e DB_NAME=factory_db \
-  -e DB_PORT=5432 \
-  -p 1225:1225 \
-  -d pc-web
+sudo docker run -d --restart \
+        unless-stopped \
+        --network database_network \
+        -e DB_HOST=postgresql \
+        -e DB_USER=admin \
+        -e DB_PASSWORD=admin \
+        -e DB_NAME=factory_db \
+        -e DB_PORT=5432 \
+        -p 1225:1225 \
+        --name pc-web \
+        -t pc-web

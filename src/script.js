@@ -473,11 +473,11 @@ function handleMQTTMessage(topic, message) {
         let data = message;
         if (typeof message === 'string' && message.startsWith('{')) data = JSON.parse(message);
         
-        // if (topic === 'supervisory') {
-        //     systemData = data;
-        //     updateDashboardData();
-        //     return;
-        // }
+        if (topic === 'supervisory') {
+            systemData = data;
+            updateDashboardData();
+            return;
+        }
 
         const topicParts = topic.split('/');
         const fId = topicParts[0], sId = topicParts[1], typeId = topicParts[2], mId = topicParts[3];

@@ -75,7 +75,7 @@ const writeData = async (data) => {
 // --- InfluxDB Setup ---
 const LOCAL_IP = '172.17.0.1'; 
 const INFLUX_URL = process.env.INFLUX_URL || `http://${LOCAL_IP}:8086`;
-const INFLUX_TOKEN = process.env.INFLUX_TOKEN || 'Z-eeyu5nHVK-oGgaRMsrTpJNtTR0Ukd_ZUULtKj3klr4I1Nl0I4TfSkFuhmBIXoIkfkIGXfxWmKZY0qAcNXKrg==';
+const INFLUX_TOKEN = process.env.INFLUX_TOKEN || '4fpNcoq3_8LSSabaSgStgtSc1wuPl3-NbDRuYANUjcVEBk1z_BNPPGZBzbB1kqwaZI0vqOuykcwO-pcD6NRZSw==';
 const INFLUX_ORG = process.env.INFLUX_ORG || 'CMN';
 const INFLUX_BUCKET = process.env.INFLUX_BUCKET || 'supervisory';
 
@@ -92,6 +92,7 @@ process.on('SIGINT', async () => {
 });
 
 function writeToInfluxDB(topic, payload) {
+  console.log("Writing Data to InfluxDB");
   const parts = topic.split('/');
   if (parts.length < 4) return;
   const f_id = parts[0], s_id = parts[1], m_type = parts[2], m_id = parts[3];
