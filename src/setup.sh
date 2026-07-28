@@ -73,10 +73,10 @@ sudo systemctl enable docker
 sudo systemctl start docker
 
 # Suppress errors on stopping/removing containers in case they don't exist yet
-sudo docker stop influxdb mynodered grafana pc-web postgresql || true
-sudo docker rm influxdb mynodered grafana pc-web postgresql || true
+sudo docker stop influxdb nodered grafana pc-web postgresql || true
+sudo docker rm influxdb nodered grafana pc-web postgresql || true
 echo "Installing node-red..."
-sudo docker run -d --restart unless-stopped -p 1880:1880 -v node_red_data:/data --name mynodered nodered/node-red --add-host=host.docker.internal:host-gateway
+sudo docker run -d --restart unless-stopped --dns 8.8.8.8 -p 1880:1880 -v node_red_data:/data --name nodered nodered/node-red --add-host=host.docker.internal:host-gateway
 
 echo "Installing InfluxDB using Docker..."
 sudo docker run -d --restart unless-stopped -p 8086:8086 --name influxdb influxdb:2
@@ -100,6 +100,7 @@ sudo docker run --name postgresql \
   -p 1555:5432 \
   -d postgres
 
+git clone https://github.com/CMN-Engineeering/Server-Monitor -b pi
 cd Server-Monitor/src
 echo "Running Web..."
 sudo docker build -t pc-web .
