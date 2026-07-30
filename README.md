@@ -37,8 +37,9 @@ You will need a Linux-based environment (Ubuntu/Debian recommended) to run the p
 ### 2. Automated Deployment
 The provided deployment bash script is the fastest way to get the production showcase running. It will update package managers, configure firewalls, install Docker, and spin up all necessary microservices.
 
-Run the bash script with root privileges:
+Run the bash script with root privileges after cloning the repo:
 ```bash
+cd src
 chmod +x setup.sh
 sudo ./setup.sh
 ```
