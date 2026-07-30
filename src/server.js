@@ -29,10 +29,10 @@ let messageCount = 0;
 
 // --- PostgreSQL Setup ---
 const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'admin',
-  password: process.env.DB_PASSWORD || 'admin',
-  database: process.env.DB_NAME || 'factory_db',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   port: process.env.DB_PORT || 5432,
 });
 
@@ -113,21 +113,33 @@ function writeToInfluxDB(topic, payload) {
     writeApi.flush().catch(err => console.error('❌ Error flushing to InfluxDB:', err));
   }
 }
-
 // --- MQTT Setup ---
-const mqttClient = mqtt.connect(`mqtt://172.17.0.1:2250`, { username: 'admin', password: 'admin' });
+// Updated to connect via WebSocket instead of standard MQTT
+const mqttClient = mqtt.connect(`ws://172.17.0.1:9001/mqtt`, { 
+  username: 'admin', 
+  password: 'admin' 
+});
 
 mqttClient.on('connect', () => {
-  mqttClient.subscribe('+/+/+/+/motor/status', (err) => {});
-  mqttClient.subscribe('+/+/+/+/session', (err) => {});
+  console.log("✅ MQTT Connected via WebSocket");
+  mqttClient.subscribe('+/+/+/+/motor/status', (err) => {
+    if (err) console.error("Subscription error (motor/status):", err);
+  });
+  mqttClient.subscribe('+/+/+/+/session', (err) => {
+    if (err) console.error("Subscription error (session):", err);
+  });
 });
 
 mqttClient.on('message', async (topic, message) => {
   try {
     const payload = JSON.parse(message.toString());
+    // Get data and add to InfluxDB
     writeToInfluxDB(topic, payload);
+    // Get data and update PostgreSQL state
     await updateDataFromMqtt(topic, payload);
-  } catch (err) {}
+  } catch (err) {
+    console.error("❌ Error processing MQTT message:", err);
+  }
 });
 
 async function updateDataFromMqtt(topic, payload) {
@@ -149,14 +161,23 @@ async function updateDataFromMqtt(topic, payload) {
         if (machine) {
           
           if (topic.endsWith('/session')) {
-              if (payload['PID'] !== undefined) { machine.pid = payload['PID']; updated = true; }
-              if (payload['EID'] !== undefined) { machine.eid = String(payload['EID']).trim(); updated = true; }
-              if (payload['MID'] !== undefined) { machine.mid = payload['MID']; updated = true; }
-              if (payload['cf'] !== undefined) { machine.cf = payload['cf']; updated = true; }
-              if (payload['qraw'] !== undefined) { machine.qraw = payload['qraw']; updated = true; }
-              if (payload['qfinal'] !== undefined) { machine.qfinal = payload['qfinal']; updated = true; }
-              if (payload['check_in'] !== undefined) { machine.check_in = parseInt(payload['check_in']); updated = true; }
-              if (payload['check_out'] !== undefined) { machine.check_out = parseInt(payload['check_out']); updated = true; }
+            if (payload['PID'] !== undefined) { machine.pid = payload['PID']; updated = true; }
+            if (payload['EID'] !== undefined) { machine.eid = String(payload['EID']).trim(); updated = true; }
+            if (payload['MID'] !== undefined) { machine.mid = payload['MID']; updated = true; }
+            if (payload['cf'] !== undefined) { machine.cf = payload['cf']; updated = true; }
+            if (payload['qraw'] !== undefined) { machine.qraw = payload['qraw']; updated = true; }
+            if (payload['qfinal'] !== undefined) { machine.qfinal = payload['qfinal']; updated = true; }
+            if (payload['check_in'] !== undefined) { machine.check_in = parseInt(payload['check_in']); updated = true; }
+            if (payload['check_out'] !== undefined) { machine.check_out = parseInt(payload['check_out']); updated = true; }
+            
+            // ADD THIS BLOCK TO FIX THE MOTOR SYNC ISSUE
+            if (payload['machine_start'] !== undefined && payload['machine_stop'] !== undefined) {
+                if (!machine.motors) machine.motors = {};
+                if (!machine.motors.motor_1) machine.motors.motor_1 = { name: "Motor 1", state: 0 };
+                
+                machine.motors.motor_1.state = (parseInt(payload['machine_start']) !== 0 && parseInt(payload['machine_stop']) === 0) ? 1 : 0;
+                updated = true;
+            }
           }
 
           if (topic.includes('/motor/status') || payload['Control Mode'] !== undefined) {
