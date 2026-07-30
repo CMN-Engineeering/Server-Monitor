@@ -39,8 +39,8 @@ The provided deployment bash script is the fastest way to get the production sho
 
 Run the bash script with root privileges:
 ```bash
-chmod +x deploy.sh
-sudo ./deploy.sh
+chmod +x setup.sh
+sudo ./setup.sh
 ```
 
 **What the script does:**
